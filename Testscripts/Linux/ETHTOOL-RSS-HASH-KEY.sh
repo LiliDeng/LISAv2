@@ -40,7 +40,7 @@ GetRSSHashKey()
     rss_hash_key=$(ethtool -x $1 | egrep  ".+:.+:.+.+.+.+.+.+")
     if [ ! $rss_hash_key ]; then
         LogErr "Get RSS hash key failed"
-        SetTestStateFailed
+        SetTestStateSkipped
         exit 0
     fi
     echo $rss_hash_key

@@ -8,7 +8,7 @@
 # if network connectivity is lost at any point
 #
 ########################################################################
-remote_user="root"
+remote_user="lisa"
 if [ ! -e sriov_constants.sh ]; then
     cp /${remote_user}/sriov_constants.sh .
 fi

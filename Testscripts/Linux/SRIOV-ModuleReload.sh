@@ -7,7 +7,7 @@
 #   Unload/load modules using modprobe, verify SR-IOV Failover is working
 #
 ########################################################################
-remote_user="root"
+remote_user="lisa"
 if [ ! -e sriov_constants.sh ]; then
     cp /${remote_user}/sriov_constants.sh .
 fi

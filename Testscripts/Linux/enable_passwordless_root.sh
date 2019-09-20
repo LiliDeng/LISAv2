@@ -53,3 +53,21 @@ else
     fi
     echo "KEY_GENERATED_SUCCESSFULLY"
 fi
+sshd_configFilePath="/etc/ssh/sshd_config"
+sshdServiceName="sshd"
+if [ ! -f $sshd_configFilePath ]; then
+    echo "File not found! Create one."
+    touch $sshd_configFilePath
+fi
+sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' $sshd_configFilePath
+systemctl stop ufw
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+systemctl restart sshd

@@ -20,7 +20,7 @@
 # should increase after the iPerf3 run.
 #
 ########################################################################
-remote_user="root"
+remote_user="lisa"
 declare -a initial_cpu_interrupts
 declare -a final_cpu_interrupts
 declare -a initial_pci_interrupts
