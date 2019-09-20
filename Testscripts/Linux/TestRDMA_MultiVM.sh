@@ -508,6 +508,16 @@ function Main() {
 	fi
 
 	for vm in $master $slaves_array; do
+		ssh root@${vm} "iptables -F"
+		ssh root@${vm} "iptables -X"
+		ssh root@${vm} "iptables -t nat -F"
+		ssh root@${vm} "iptables -t nat -X"
+		ssh root@${vm} "iptables -t mangle -F"
+		ssh root@${vm} "iptables -t mangle -X"
+		ssh root@${vm} "iptables -P INPUT ACCEPT"
+		ssh root@${vm} "iptables -P FORWARD ACCEPT"
+		ssh root@${vm} "iptables -P OUTPUT ACCEPT"
+
 		LogMsg "Checking $ib_nic status in $vm"
 		# Verify ib_nic exists or not.
 		ssh root@${vm} "ip addr show $ib_nic | grep 'inet '" > /dev/null

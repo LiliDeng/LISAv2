@@ -12,7 +12,7 @@
 # Note: This script can handle multiple SR-IOV interfaces
 #
 ########################################################################
-remote_user="root"
+remote_user="lisa"
 if [ ! -e sriov_constants.sh ]; then
     cp /${remote_user}/sriov_constants.sh .
 fi
@@ -56,19 +56,19 @@ if [[ "$NIC_COUNT" -gt 1 ]];then
             fi
         fi
     done
-    CLIENT_NIC_IPs=$(ssh root@"$VF_IP2" "ip add show | grep -v SLAVE | grep BROADCAST | sed 's/:/ /g' | awk '{print \$2}'")
+    CLIENT_NIC_IPs=$(ssh "$remote_user"@"$VF_IP2" "ip add show | grep -v SLAVE | grep BROADCAST | sed 's/:/ /g' | awk '{print \$2}'")
     CLIENT_NIC_IPs=($CLIENT_NIC_IPs)
     for CLIENT_NIC in "${CLIENT_NIC_IPs[@]}"
     do
-        client_ip_address=$(ssh root@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
+        client_ip_address=$(ssh "$remote_user"@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
         if [[ -z "$client_ip_address" ]] ; then
-            ssh root@"${VF_IP2}" "pkill dhclient"
+            ssh "$remote_user"@"${VF_IP2}" "pkill dhclient"
             sleep 3
-            ssh root@"${VF_IP2}" "timeout 20 dhclient $CLIENT_NIC"
-            client_ip_address=$(ssh root@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
+            ssh "$remote_user"@"${VF_IP2}" "timeout 20 dhclient $CLIENT_NIC"
+            client_ip_address=$(ssh "$remote_user"@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
             if [[ -z "$client_ip_address" ]] ; then
                 LogMsg "NIC $CLIENT_NIC doesn't have ip even after running dhclient"
-                client_if_config=$(ssh root@"$VF_IP2" "ip a")
+                client_if_config=$(ssh "$remote_user"@"$VF_IP2" "ip a")
                 LogMsg "Client ifconfig ${client_if_config}"
                 SetTestStateFailed
                 exit 0

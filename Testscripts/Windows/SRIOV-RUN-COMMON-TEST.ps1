@@ -99,7 +99,7 @@ function Main {
                 Run-LinuxCmd -ip $publicIp -port $dependencyVmData.SSHPort -username $VMUsername -password `
                     $password -command "chmod +x /home/$VMUsername/*.sh" -RunAsSudo | Out-Null
                 Run-LinuxCmd -ip $publicIp -port $vmPort -username $VMUsername -password `
-                    $password -command "./enable_passwordless_root.sh /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo | Out-Null
+                    $password -command "./enablePasswordLessRoot.sh /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername; chown -Rf ${VMUsername}:${VMUsername} /home/$VMUsername/" -RunAsSudo | Out-Null
 
                 # Copy keys from VM1 and setup VM2
                 Copy-RemoteFiles -download -downloadFrom $publicIp -port $vmPort -files `
@@ -107,7 +107,7 @@ function Main {
                 Copy-RemoteFiles -uploadTo $publicIp -port $dependencyVmData.SSHPort -files "$LogDir\sshFix.tar" `
                     -username $VMUsername -password $password -upload | Out-Null
                 Run-LinuxCmd -ip $publicIp -port $dependencyVmData.SSHPort -username $VMUsername -password `
-                    $password -command "./enable_passwordless_root.sh /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo | Out-Null
+                    $password -command "./enablePasswordLessRoot.sh /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername; chown -Rf ${VMUsername}:${VMUsername} /home/$VMUsername/" -RunAsSudo | Out-Null
             }
 
             # Install dependencies on both VMs

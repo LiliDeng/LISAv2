@@ -238,13 +238,32 @@ Run_Ntttcp()
 	data_loss=0
 	Kill_Process "${server}" ntttcp
 	Kill_Process "${client}" ntttcp
-	
+
 	# Disable firewalld
 	Run_SSHCommand "${client}" "service firewalld stop"
+	Run_SSHCommand "${client}" "iptables -F"
+	Run_SSHCommand "${client}" "iptables -X"
+	Run_SSHCommand "${client}" "iptables -t nat -F"
+	Run_SSHCommand "${client}" "iptables -t nat -X"
+	Run_SSHCommand "${client}" "iptables -t mangle -F"
+	Run_SSHCommand "${client}" "iptables -t mangle -X"
+	Run_SSHCommand "${client}" "iptables -P INPUT ACCEPT"
+	Run_SSHCommand "${client}" "iptables -P OUTPUT ACCEPT"
+	Run_SSHCommand "${client}" "iptables -P FORWARD ACCEPT"
+
 	Run_SSHCommand "${server}" "service firewalld stop"
-	
-	Run_SSHCommand "${server}" "mkdir -p ${log_folder}"
-	Run_SSHCommand "${client}" "mkdir -p ${log_folder}"
+	Run_SSHCommand "${server}" "iptables -F"
+	Run_SSHCommand "${server}" "iptables -X"
+	Run_SSHCommand "${server}" "iptables -t nat -F"
+	Run_SSHCommand "${server}" "iptables -t nat -X"
+	Run_SSHCommand "${server}" "iptables -t mangle -F"
+	Run_SSHCommand "${server}" "iptables -t mangle -X"
+	Run_SSHCommand "${server}" "iptables -P INPUT ACCEPT"
+	Run_SSHCommand "${server}" "iptables -P OUTPUT ACCEPT"
+	Run_SSHCommand "${server}" "iptables -P FORWARD ACCEPT"
+
+	Run_SSHCommand "${server}" "mkdir -p $log_folder"
+	Run_SSHCommand "${client}" "mkdir -p $log_folder"
 	result_file="${log_folder}/report.csv"
 	if [[ $testType == "udp" ]];
 	then

@@ -485,7 +485,7 @@ function Is-VmAlive {
 
     $retryCount = 0
     $kernelPanicPeriod = 3
-
+    $returnTrue = "False"
     do {
         $deadVms = 0
         $retryCount += 1
@@ -517,10 +517,18 @@ function Is-VmAlive {
             Start-Sleep -Seconds 3
         } else {
             Write-LogInfo "The SSH ports for all VMs are open."
-            return "True"
+            $returnTrue = "True"
+            break
         }
     } While (($retryCount -lt $MaxRetryCount) -and ($deadVms -gt 0))
 
+    if ($returnTrue -eq "True") {
+        foreach ( $vm in $AllVMDataObject) {
+            $Null = Run-LinuxCmd -ip $vm.PublicIP -port $vm.SSHPort `
+                -username $user -password $password -runAsSudo -command "iptables -F;iptables -X;iptables -t nat -F;iptables -t nat -X;iptables -t mangle -F;iptables -t mangle -X;iptables -P INPUT ACCEPT;iptables -P OUTPUT ACCEPT;iptables -P FORWARD ACCEPT"
+        }
+        return $returnTrue
+    }
     return "False"
 }
 

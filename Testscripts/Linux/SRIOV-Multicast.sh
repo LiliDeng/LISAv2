@@ -22,7 +22,7 @@ function Execute_Validate_Remote_Command(){
         exit 0
     fi
 }
-remote_user="root"
+remote_user="lisa"
 cp /${remote_user}/sriov_constants.sh .
 # Source utils.sh
 . SR-IOV-Utils.sh || {
