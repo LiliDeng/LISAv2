@@ -30,7 +30,7 @@ UtilsInit
 ConfigureXFSTestTools() {
     case "$DISTRO" in
         ubuntu*|debian*)
-            until dpkg --force-all --configure -a; sleep 10; do echo 'Trying again...'; done
+            CheckInstallLockUbuntu
             pack_list=(btrfs-tools libacl1-dev libaio-dev libattr1-dev libgdbm-dev libtool-bin libuuid1 libuuidm-ocaml-dev sqlite3 uuid-dev uuid-runtime xfslibs-dev zlib1g-dev)
         ;;
 
