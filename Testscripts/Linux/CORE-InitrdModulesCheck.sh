@@ -22,7 +22,7 @@ SearchModules()
     LogMsg "Searching for modules..."
     if [[ -d "/root/initr/usr/lib/modules" ]]; then
         abs_path="/root/initr/usr/lib/modules/"
-    elif [[ -d "" ]]; then
+    elif [[ -d "/root/initr/lib/modules" ]]; then
         abs_path="/root/initr/lib/modules/"
     elif [[ -d "/usr/lib64/modules" ]]; then
         abs_path="/usr/lib64/modules/"
