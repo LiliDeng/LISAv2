@@ -122,8 +122,8 @@ function Main {
         Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
             -password $password -command "/$superuser/xfstesting.sh" -RunInBackground | Out-Null
         # Check the status of the run every minute
-        # If the run is longer than 3 hours, abort the test
-        $timeout = New-Timespan -Minutes 180
+        # If the run is longer than 6 hours, abort the test
+        $timeout = New-Timespan -Minutes 300
         $sw = [diagnostics.stopwatch]::StartNew()
         while ($sw.elapsed -lt $timeout) {
             Start-Sleep -s 60
@@ -164,7 +164,7 @@ function Main {
             -password $password -TestName $currentTestData.testName
         if ($state -eq "TestRunning") {
             $resultArr += "ABORTED"
-            Write-LogErr "xfstesting.sh is still running after 4 hours!"
+            Write-LogErr "xfstesting.sh is still running after 5 hours!"
         } else {
             $resultArr += $testResult
         }
