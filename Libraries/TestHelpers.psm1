@@ -364,7 +364,7 @@ Function Run-LinuxCmd([string] $username,[string] $password,[string] $ip,[string
 		}
 		else
 		{
-			$linuxCommand = "`"echo $plainTextPassword | sudo -u $username -S bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
+			$linuxCommand = "`"echo $plainTextPassword | sudo -S bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
 			$logCommand = "`"echo $plainTextPassword | sudo -S $MaskedCommand`""
 		}
 	}
