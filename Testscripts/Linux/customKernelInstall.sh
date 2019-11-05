@@ -448,6 +448,10 @@ function InstallKernel() {
         if [ $? -eq 0 ]; then
             LogMsg "CUSTOM_KERNEL_SUCCESS"
             SetTestStateCompleted
+            git_folder_git_extension=${kernelSource##*/}
+            git_folder=${git_folder_git_extension%%.*}
+            LogMsg "Delete folder: $(pwd)/$git_folder"
+            rm -rf "$(pwd)/$git_folder"
         else
             LogMsg "CUSTOM_KERNEL_FAIL"
             SetTestStateFailed
