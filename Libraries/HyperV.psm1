@@ -591,6 +591,7 @@ function Inject-HostnamesInHyperVVMs($allVMData) {
         {
             Write-LogInfo "Injecting hostname '$($VM.RoleName)' in HyperV VM..."
             if (!$global:IsWindowsImage) {
+                Run-LinuxCmd -ip $VM.PublicIP -port $VM.SSHPort -username $user -password $password -command "apt install -y -qq linux-cloud-tools-`$(uname -r)" -runAsSudo | out-null
                 Run-LinuxCmd -username $user -password $password -ip $VM.PublicIP -port $VM.SSHPort `
                     -command "echo $($VM.RoleName) > /etc/hostname ; sed -i `"/127/s/`$/ $($VM.RoleName)/`" /etc/hosts" -runAsSudo -maxRetryCount 5
             } else {
