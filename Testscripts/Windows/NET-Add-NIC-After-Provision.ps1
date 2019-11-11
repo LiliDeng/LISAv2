@@ -58,11 +58,11 @@ function Main {
 			}
 			Start-Sleep -s 5
 			Write-LogInfo "Successfully added extra NIC #${nicNr}!"
-		}
-		Update-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -VM $vm | Out-Null
-		if (-not $?) {
-			Write-LogErr "Failed to update the VM $($AllVMData.RoleName) with new NIC(s)"
-			return "FAIL"
+			Update-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -VM $vm | Out-Null
+			if (-not $?) {
+				Write-LogErr "Failed to update the VM $($AllVMData.RoleName) with new NIC(s)"
+				return "FAIL"
+			}
 		}
 		# Start VM
 		Start-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName | Out-Null
