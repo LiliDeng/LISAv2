@@ -49,12 +49,12 @@ function Main() {
 			-files "$fullPath"
 		$null = Run-LinuxCmd -username $user -password $password `
 			-ip $publicIP -port $port -runAsSudo `
-			-command "bash /home/$username/${gcovScript} --test_category ${testCategory} --test_name ${testName} --work_dir ${WORK_DIR} --build_dir ${remoteBuildDir} --archive_name ${logName}"
+			-command "bash ./${gcovScript} --test_category ${testCategory} --test_name ${testName} --work_dir ${WORK_DIR} --build_dir ${remoteBuildDir} --archive_name ${logName}"
 	}
 
     $null = Run-LinuxCmd -username $user -password $password `
         -ip $publicIP -port $port -runAsSudo `
-        -command "bash /home/$username/${reportScript} --build_dir ${remoteBuildDir} --test_category ${testCategory} --gcov_path ${WORK_DIR}/gcov"
+        -command "bash ./${reportScript} --build_dir ${remoteBuildDir} --test_category ${testCategory} --gcov_path ${WORK_DIR}/gcov"
 
     Copy-RemoteFiles -download -downloadFrom $publicIP -files "${testCategory}.zip" `
         -downloadTo ".\CodeCoverage\" -port $port -username $username -password $password

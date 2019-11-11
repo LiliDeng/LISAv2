@@ -101,9 +101,9 @@ function Main {
     $stateFile = "${LogDir}\state.txt"
     $MountFloppy = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > MountFloppy.log`""
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $MountFloppy -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/MountFloppy.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./MountFloppy.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     if (($contents -eq "TestAborted") -or ($contents -eq "TestFailed")) {

@@ -17,7 +17,7 @@ remote_user_home="/root"
 
 SendFile(){
     # Download netperf 2.7.0
-    homeDir="/home/${SUDO_USER}"
+    homeDir=$(pwd)
     cd ${homeDir}
     wget https://github.com/HewlettPackard/netperf/archive/netperf-2.7.0.tar.gz > /dev/null 2>&1
     if [ $? -ne 0 ]; then

@@ -78,7 +78,7 @@ Function Confirm-KVPKey {
     $logfile = "KVP-Verify-${Pool}-${Key}-${Value}.log"
     $ConfirmKVPKey = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} ${Pool} ${Key} ${Value} > $logfile`""
     $null = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $ConfirmKVPKey -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/$logfile" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./$logfile" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path "${LogDir}\$logfile"
     if ($contents -contains "Key: ${Key}; Value: ${Value}") {
@@ -90,7 +90,7 @@ Function Confirm-KVPKey {
         return $False
     }
 
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/$logfile" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./$logfile" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
 }
 

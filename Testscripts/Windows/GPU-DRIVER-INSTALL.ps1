@@ -101,11 +101,6 @@ function Collect-Logs {
     # Get logs. An extra check for the previous $state is needed
     # The test could actually hang. If state.txt is showing
     # 'TestRunning' then abort the test
-    #####
-    # We first need to move copy from root folder to user folder for
-    # Collect-TestLogs function to work
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command "cp * /home/$user" -ignoreLinuxExitCode:$true
     Collect-TestLogs -LogsDestination $LogDir -ScriptName `
         $currentTestData.files.Split('\')[3].Split('.')[0] -TestType "sh" -PublicIP `
         $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $user `

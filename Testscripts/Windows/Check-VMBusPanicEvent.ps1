@@ -49,7 +49,7 @@ function Check-VMBusPanicEvent {
     if ($TestParams.ENABLE_KDUMP -eq "true") {
         $installKdumpFile = "KDUMP-Config.sh"
         $installKdumpScript = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${installKdumpFile} > install_kdump.log`""
-        $installKdumpLog = "/home/${VMUserName}/install_kdump.log"
+        $installKdumpLog = "./install_kdump.log"
         Run-LinuxCmd -username $VMUserName -password $VMPassword `
                     -ip $Ipv4 -port $VMPort $installKdumpScript -runAsSudo
         Copy-RemoteFiles -download -downloadFrom $Ipv4 -files $installKdumpLog `

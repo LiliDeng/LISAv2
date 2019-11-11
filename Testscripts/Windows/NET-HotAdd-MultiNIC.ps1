@@ -96,9 +96,9 @@ function Main {
     $stateFile = "${LogDir}\state.txt"
     $NETVerifyHotAddMultiNIC = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} ${nic_action} > NET-Verify-${nic_action}-MultiNIC.log`""
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $NETVerifyHotAddMultiNIC -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/NET-Verify-${nic_action}-MultiNIC.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/./NET-Verify-${nic_action}-MultiNIC.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     if (($contents -eq "TestAborted") -or ($contents -eq "TestFailed")) {

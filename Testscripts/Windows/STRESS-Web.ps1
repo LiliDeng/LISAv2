@@ -6,16 +6,16 @@ param([object] $AllVmData,
 $testScript = "stress_web.sh"
 
 function Start-TestExecution ($ip, $port) {
-    Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "chmod +x *;touch /home/$username/state.txt" -runAsSudo
+    Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "chmod +x *;touch ./state.txt" -runAsSudo
     Write-LogInfo "Executing : ${testScript}"
-    $cmd = "/home/$username/${testScript}"
+    $cmd = "./${testScript}"
     $testJob = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
     while ((Get-Job -Id $testJob).State -eq "Running") {
-        $currentStatus = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "cat /home/$username/state.txt" -runAsSudo
-        Write-LogInfo "Current test status : $currentStatus"
+        $. = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "cat ./state.txt" -runAsSudo
+        Write-LogInfo "Current test status : $."
         Wait-Time -seconds 30
     }
-    return $currentStatus
+    return $.
 }
 
 function Get-SQLQueryOfWebStress ($currentTestResult) {
@@ -130,7 +130,7 @@ function Main() {
             Write-LogInfo "Prepare file: /var/www/html/$fileName "
             $cmd = "dd if=/dev/zero of=/var/www/html/$fileName bs=1024 count=$fileSize"
             Run-LinuxCmd -ip $serverPublicIP -port $serverSSHPort -username $username -password $password -command $cmd -runAsSudo
-            $cmd = "echo http://${serverSecondInternalIP}/${fileName} >> /home/${username}/urls"
+            $cmd = "echo http://${serverSecondInternalIP}/${fileName} >> ./urls"
             Run-LinuxCmd -ip $clientPublicIP -port $clientSSHPort -username $username -password $password -command $cmd -runAsSudo
         }
 

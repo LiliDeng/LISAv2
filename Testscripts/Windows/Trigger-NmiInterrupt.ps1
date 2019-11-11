@@ -36,8 +36,8 @@ function Trigger-NmiInterrupt {
 
         $nmiCheckScript = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > nmicheck.log`""
         $includeBuildNumberScript = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;echo 'BuildNumber=${buildNumber}' >> `$HOME/constants.sh`""
-        $nmiCheckLog = "/home/${VMUserName}/nmicheck.log"
-        $nmiCheckState = "/home/${VMUserName}/state.txt"
+        $nmiCheckLog = "./nmicheck.log"
+        $nmiCheckState = "./state.txt"
 
         Run-LinuxCmd -username $VMUserName -password $VMPassword `
                     -ip $Ipv4 -port $VMPort $includeBuildNumberScript

@@ -43,7 +43,7 @@ function Main() {
         -ip $publicIP -port $port -command "chmod a+x *.sh" -runAsSudo
     $null = Run-LinuxCmd -username $username -runMaxAllowedTime 6000 `
         -password $password -ip $publicIP -port $port `
-        -command "bash /home/$username/${testScript} > debug.log 2>&1" -runAsSudo
+        -command "bash ./${testScript} > debug.log 2>&1" -runAsSudo
 
     $buildResult = Run-LinuxCmd -username $user -password $password `
         -ip $publicIP -port $port -command "cat ./results.txt" -runAsSudo

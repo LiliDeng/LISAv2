@@ -57,7 +57,7 @@ function Create-TestResultObject()
 }
 
 # Upload a single file
-function Upload-RemoteFile($uploadTo, $port, $file, $username, $password, $usePrivateKey, $maxRetry) {
+function Upload-RemoteFile($uploadTo, $port, $file, $username, $password, $usePrivateKey, $maxRetry, [string]$uploadToFolder="/tmp") {
 	$retry=1
 	if (!$maxRetry) {
 		$maxRetry = 10
@@ -69,12 +69,12 @@ function Upload-RemoteFile($uploadTo, $port, $file, $username, $password, $usePr
 		if ($usePrivateKey)
 		{
 			Write-LogDbg "Uploading $file to $username : $uploadTo, port $port using PrivateKey authentication"
-			Write-Output "yes" | .\Tools\pscp -i .\ssh\$sshKey -q -P $port $file $username@${uploadTo}:
+			Write-Output "yes" | .\Tools\pscp -i .\ssh\$sshKey -q -P $port $file $username@${uploadTo}:$uploadToFolder
 			$returnCode = $LASTEXITCODE
 		}
 		else
 		{
-			Write-LogDbg "Uploading $file to $username @ $uploadTo : $port using password authentication"
+			Write-LogDbg "Uploading $file to $username @ $uploadTo : $uploadToFolder $port using password authentication"
 			$curDir = $PWD
 			$uploadStatusRandomFileName = "UploadStatusFile" + (Get-Random -Maximum 9999 -Minimum 1111) + ".txt"
 			$uploadStatusRandomFile = Join-Path $env:TEMP $uploadStatusRandomFileName
@@ -85,12 +85,13 @@ function Upload-RemoteFile($uploadTo, $port, $file, $username, $password, $usePr
 							Set-Content -Value "1" -Path $args[6];
 							$username = $args[4];
 							$uploadTo = $args[5];
-							Write-Output "yes" | .\Tools\pscp -v -pw $args[1] -q -P $args[2] $args[3] $username@${uploadTo}: 2>&1;
+							$uploadToFolder = $args[7];
+							Write-Output "yes" | .\Tools\pscp -v -pw $args[1] -q -P $args[2] $args[3] $username@${uploadTo}:$uploadToFolder 2>&1;
 							if ( $LASTEXITCODE -ne 0 ) {
-								Write-Output "yes" | .\Tools\pscp -v -scp -pw $args[1] -q -P $args[2] $args[3] $username@${uploadTo}: 2>&1;
+								Write-Output "yes" | .\Tools\pscp -v -scp -pw $args[1] -q -P $args[2] $args[3] $username@${uploadTo}:$uploadToFolder 2>&1;
 							}
 							Set-Content -Value $LASTEXITCODE -Path $args[6];
-						} -ArgumentList $curDir,$password,$port,$file,$username,${uploadTo},$uploadStatusRandomFile
+						} -ArgumentList $curDir,$password,$port,$file,$username,${uploadTo},$uploadStatusRandomFile,$uploadToFolder
 			Start-Sleep -Milliseconds 100
 			$uploadJobStatus = Get-Job -Id $uploadJob.Id
 			$uploadTimout = $false
@@ -147,7 +148,7 @@ function Upload-RemoteFile($uploadTo, $port, $file, $username, $password, $usePr
 }
 
 # Download a single file
-function Download-RemoteFile($downloadFrom, $downloadTo, $port, $file, $username, $password, $usePrivateKey, $maxRetry) {
+function Download-RemoteFile($downloadFrom, $downloadTo, $port, $file, $username, $password, $usePrivateKey, $maxRetry, [string]$downloadFromFolder="/tmp") {
 	$retry=1
 	if (!$maxRetry) {
 		$maxRetry = 20
@@ -177,11 +178,12 @@ function Download-RemoteFile($downloadFrom, $downloadTo, $port, $file, $username
 				${downloadFrom}=$args[5];
 				$downloadTo=$args[6];
 				$downloadStatusRandomFile=$args[7];
+				$downloadFromFolder=$args[8];
 				Set-Location $curDir;
 				Set-Content -Value "1" -Path $args[6];
-				Write-Output "yes" | .\Tools\pscp -i .\ssh\$sshKey -q -P $port $username@${downloadFrom}:$testFile $downloadTo;
+				Write-Output "yes" | .\Tools\pscp -i .\ssh\$sshKey -q -P $port $username@${downloadFrom}:/$downloadFromFolder/$testFile $downloadTo;
 				Set-Content -Value $LASTEXITCODE -Path $downloadStatusRandomFile;
-			} -ArgumentList $curDir,$sshKey,$port,$file,$username,${downloadFrom},$downloadTo,$downloadStatusRandomFile
+			} -ArgumentList $curDir,$sshKey,$port,$file,$username,${downloadFrom},$downloadTo,$downloadStatusRandomFile,$downloadFromFolder
 		} else {
 			$downloadJob = Start-Job -ScriptBlock {
 				$curDir=$args[0];
@@ -192,13 +194,14 @@ function Download-RemoteFile($downloadFrom, $downloadTo, $port, $file, $username
 				${downloadFrom}=$args[5];
 				$downloadTo=$args[6];
 				$downloadStatusRandomFile=$args[7];
+				$downloadFromFolder=$args[8];
 				Set-Location $curDir;
-				Write-Output "yes" | .\Tools\pscp.exe -2 -unsafe -pw $password -q -P $port $username@${downloadFrom}:$testFile $downloadTo 2> $downloadStatusRandomFile;
+				Write-Output "yes" | .\Tools\pscp.exe -2 -unsafe -pw $password -q -P $port $username@${downloadFrom}:/$downloadFromFolder/$testFile $downloadTo 2> $downloadStatusRandomFile;
 				if ( $LASTEXITCODE -ne 0 ) {
-					Write-Output "yes" | .\Tools\pscp.exe -2 -v -scp -unsafe -pw $password -q -P $port $username@${downloadFrom}:$testFile $downloadTo 2> $downloadStatusRandomFile;
+					Write-Output "yes" | .\Tools\pscp.exe -2 -v -scp -unsafe -pw $password -q -P $port $username@${downloadFrom}:/$downloadFromFolder/$testFile $downloadTo 2> $downloadStatusRandomFile;
 				}
 				Add-Content -Value "DownloadExitCode_$LASTEXITCODE" -Path $downloadStatusRandomFile;
-			} -ArgumentList $curDir,$password,$port,$file,$username,${downloadFrom},$downloadTo,$downloadStatusRandomFile
+			} -ArgumentList $curDir,$password,$port,$file,$username,${downloadFrom},$downloadTo,$downloadStatusRandomFile,$downloadFromFolder
 		}
 		Start-Sleep -Milliseconds 100
 		$downloadJobStatus = Get-Job -Id $downloadJob.Id
@@ -259,7 +262,7 @@ function Download-RemoteFile($downloadFrom, $downloadTo, $port, $file, $username
 }
 
 # Upload or download files to/from remote VMs
-Function Copy-RemoteFiles($uploadTo, $downloadFrom, $downloadTo, $port, $files, $username, $password, [switch]$upload, [switch]$download, [switch]$usePrivateKey, [switch]$doNotCompress, $maxRetry)
+Function Copy-RemoteFiles($uploadTo, $downloadFrom, $downloadTo, $port, $files, $username, $password, [switch]$upload, [switch]$download, [switch]$usePrivateKey, [switch]$doNotCompress, [string]$uploadToFolder, [string]$downloadFromFolder, $maxRetry)
 {
 	if (!$files) {
 		Write-LogErr "No file(s) to copy."
@@ -296,20 +299,29 @@ Function Copy-RemoteFiles($uploadTo, $downloadFrom, $downloadTo, $port, $files, 
 			$fileList = @($tarFileName)
 		}
 		foreach ($file in $fileList) {
-			Upload-RemoteFile -uploadTo $uploadTo -port $port -file $file -username $username -password $password -UsePrivateKey $UsePrivateKey $maxRetry
+            if (!$uploadToFolder) {
+			    Upload-RemoteFile -uploadTo $uploadTo -port $port -file $file -username $username -password $password -UsePrivateKey $UsePrivateKey $maxRetry
+            } else {
+                Upload-RemoteFile -uploadTo $uploadTo -port $port -file $file -username $username -password $password -UsePrivateKey $UsePrivateKey $maxRetry -uploadToFolder $uploadToFolder
+            }
 		}
 		if ($doCompress) {
 			Write-LogDbg "Removing compressed file : $tarFileName"
 			Remove-Item -Path $tarFileName -Force 2>&1 | Out-Null
 			Write-LogDbg "Decompressing files in VM ..."
-			$out = Run-LinuxCmd -username $username -password $password -ip $uploadTo -port $port -command "tar -xf $tarFileName" -runAsSudo
+			$out = Run-LinuxCmd -username $username -password $password -ip $uploadTo -port $port -command "which tar && tar -xf $tarFileName" -runAsSudo
 		}
 	}
 	elseif ($download)
 	{
 		foreach ($file in $fileList) {
-			Download-RemoteFile -downloadFrom $downloadFrom -downloadTo $downloadTo -port $port -file $file -username $username `
-				-password $password -usePrivateKey $usePrivateKey $maxRetry
+            if (!$downloadFromFolder) {
+			    Download-RemoteFile -downloadFrom $downloadFrom -downloadTo $downloadTo -port $port -file $file -username $username `
+				    -password $password -usePrivateKey $usePrivateKey $maxRetry
+            } else {
+			    Download-RemoteFile -downloadFrom $downloadFrom -downloadTo $downloadTo -port $port -file $file -username $username `
+				    -password $password -usePrivateKey $usePrivateKey $maxRetry -downloadFromFolder $downloadFromFolder
+            }
 		}
 	}
 	else
@@ -337,7 +349,7 @@ Function Wrap-CommandsToFile([string] $username,[string] $password,[string] $ip,
 	}
 }
 
-Function Run-LinuxCmd([string] $username,[string] $password,[string] $ip,[string] $command, [int] $port, [switch]$runAsSudo, [Boolean]$WriteHostOnly, [Boolean]$NoLogsPlease, [switch]$ignoreLinuxExitCode, [int]$runMaxAllowedTime = 300, [switch]$RunInBackGround, [int]$maxRetryCount = 20, [string] $MaskStrings)
+Function Run-LinuxCmd([string] $username,[string] $password,[string] $ip,[string] $command, [int] $port, [switch]$runAsSudo, [Boolean]$WriteHostOnly, [Boolean]$NoLogsPlease, [switch]$ignoreLinuxExitCode, [int]$runMaxAllowedTime = 300, [switch]$RunInBackGround, [int]$maxRetryCount = 20, [string]$MaskStrings, [string]$ExecuteFolder="/tmp")
 {
 	Wrap-CommandsToFile $username $password $ip $command $port
 	$MaskedCommand = $command
@@ -359,12 +371,12 @@ Function Run-LinuxCmd([string] $username,[string] $password,[string] $ip,[string
 		$plainTextPassword = $password.Replace('"','');
 		if ( $detectedDistro -eq "COREOS" )
 		{
-			$linuxCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && echo $plainTextPassword | sudo -S env `"PATH=`$PATH`" bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
+			$linuxCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && echo $plainTextPassword | sudo -S env `"PATH=`$PATH`" bash -c `'cd $ExecuteFolder; bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
 			$logCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && echo $plainTextPassword | sudo -S env `"PATH=`$PATH`" $MaskedCommand`""
 		}
 		else
 		{
-			$linuxCommand = "`"echo $plainTextPassword | sudo -S bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
+			$linuxCommand = "`"echo $plainTextPassword | sudo -S bash -c `'cd $ExecuteFolder; bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
 			$logCommand = "`"echo $plainTextPassword | sudo -S $MaskedCommand`""
 		}
 	}
@@ -372,12 +384,12 @@ Function Run-LinuxCmd([string] $username,[string] $password,[string] $ip,[string
 	{
 		if ( $detectedDistro -eq "COREOS" )
 		{
-			$linuxCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
+			$linuxCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && bash -c `'cd $ExecuteFolder; bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
 			$logCommand = "`"export PATH=/usr/share/oem/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/share/oem/bin:/opt/bin && $MaskedCommand`""
 		}
 		else
 		{
-			$linuxCommand = "`"bash -c `'bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
+			$linuxCommand = "`"bash -c `'cd $ExecuteFolder; bash runtest.sh ; echo AZURE-LINUX-EXIT-CODE-`$?`' `""
 			$logCommand = "`"$MaskedCommand`""
 		}
 	}

@@ -33,7 +33,7 @@ function Main {
             throw "VSS Daemon is not running"
         }
         # Create a file on the VM before backup
-        $null = Run-LinuxCmd -username $user -password $password -ip $Ipv4 -port $VMPort -command "touch /home/$user/1" -runAsSudo
+        $null = Run-LinuxCmd -username $user -password $password -ip $Ipv4 -port $VMPort -command "touch 1" -runAsSudo
         $BackupDriveLetter = $global:driveletter
         if ($null -eq $BackupDriveLetter) {
             throw "Test parameter BackupDriveLetter was not specified."
