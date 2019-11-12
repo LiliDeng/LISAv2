@@ -95,9 +95,9 @@ function Main {
                     ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
                     -username $VMUsername -password $password -upload | Out-Null
                 Run-LinuxCmd -ip $publicIp -port $vmPort -username $VMUsername -password `
-                    $password -command "chmod +x /home/$VMUsername/*.sh" -RunAsSudo | Out-Null
+                    $password -command "chmod +x *.sh" -RunAsSudo | Out-Null
                 Run-LinuxCmd -ip $publicIp -port $dependencyVmData.SSHPort -username $VMUsername -password `
-                    $password -command "chmod +x /home/$VMUsername/*.sh" -RunAsSudo | Out-Null
+                    $password -command "chmod +x *.sh" -RunAsSudo | Out-Null
                 Run-LinuxCmd -ip $publicIp -port $vmPort -username $VMUsername -password `
                     $password -command "./enablePasswordLessRoot.sh /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo | Out-Null
 

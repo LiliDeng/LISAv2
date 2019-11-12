@@ -309,7 +309,7 @@ Function Copy-RemoteFiles($uploadTo, $downloadFrom, $downloadTo, $port, $files, 
 			Write-LogDbg "Removing compressed file : $tarFileName"
 			Remove-Item -Path $tarFileName -Force 2>&1 | Out-Null
 			Write-LogDbg "Decompressing files in VM ..."
-			$out = Run-LinuxCmd -username $username -password $password -ip $uploadTo -port $port -command "which tar && tar -xf $tarFileName" -runAsSudo
+			$out = Run-LinuxCmd -username $username -password $password -ip $uploadTo -port $port -command "tar -xf $tarFileName" -runAsSudo
 		}
 	}
 	elseif ($download)

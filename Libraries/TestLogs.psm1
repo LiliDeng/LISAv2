@@ -340,8 +340,8 @@ Function Check-KernelLogs($allVMData, $vmUser, $vmPassword)
 			mkdir $BootLogDir -Force | Out-Null
 			Write-LogInfo "Collecting $($VM.RoleName) VM Kernel Logs.."
 			$currentKernelLogFile="$BootLogDir\CurrentKernelLogs.txt"
-			$Null = Run-LinuxCmd -ip $VM.PublicIP -port $VM.SSHPort -username $vmUser -password $vmPassword -command "dmesg > ./CurrentKernelLogs.txt" -runAsSudo
-			$Null = Copy-RemoteFiles -download -downloadFrom $VM.PublicIP -port $VM.SSHPort -files "./CurrentKernelLogs.txt" -downloadTo $BootLogDir -username $vmUser -password $vmPassword
+			$Null = Run-LinuxCmd -ip $VM.PublicIP -port $VM.SSHPort -username $vmUser -password $vmPassword -command "dmesg > CurrentKernelLogs.txt" -runAsSudo
+			$Null = Copy-RemoteFiles -download -downloadFrom $VM.PublicIP -port $VM.SSHPort -files "CurrentKernelLogs.txt" -downloadTo $BootLogDir -username $vmUser -password $vmPassword
 			Write-LogInfo "$($VM.RoleName): Kernel logs collected successfully."
 			foreach ($errorLine in $errorLines)
 			{
