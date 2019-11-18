@@ -94,8 +94,14 @@ function Install_Build_Deps {
     ubuntu*|debian*)
         CheckInstallLockUbuntu
         LogMsg "Installing package git build-essential bison flex libelf-dev libncurses5-dev xz-utils libssl-dev bc ccache"
-        apt_get_install "git build-essential bison flex libelf-dev libncurses5-dev xz-utils libssl-dev bc ccache"  >> $LOG_FILE 2>&1
+        apt_get_install "git build-essential bison flex libelf-dev libncurses5-dev xz-utils libssl-dev bc ccache" >> $LOG_FILE 2>&1
 
+        PATH="/usr/lib/ccache:"$PATH
+        ;;
+
+    suse*)
+        LogMsg "Installing package git make tar gcc bc patch dos2unix wget xz flex libelf-devel openssl-devel bison"
+        install_package "git make tar gcc bc patch dos2unix wget xz flex libelf-devel openssl-devel bison" >> $LOG_FILE 2>&1
         PATH="/usr/lib/ccache:"$PATH
         ;;
 
@@ -158,6 +164,9 @@ function Build_Kernel() {
     LogMsg "Start to make old config"
     make olddefconfig >> $LOG_FILE 2>&1
     check_exit_status "Make kernel config" "exit"
+
+    LogMsg "Unset CONFIG_SYSTEM_TRUSTED_KEYS"
+    sed -ri '/CONFIG_SYSTEM_TRUSTED_KEYS/s/=.+/=""/g' .config >> $LOG_FILE 2>&1
 
     LogMsg "Start to build kernel"
     make -j"$thread_number" >> $LOG_FILE 2>&1
