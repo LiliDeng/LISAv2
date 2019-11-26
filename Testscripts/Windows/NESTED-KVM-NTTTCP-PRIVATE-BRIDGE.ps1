@@ -21,11 +21,11 @@ function Start-TestExecution ($ip, $port) {
     Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "chmod +x *" -runAsSudo
 
     Write-LogInfo "Executing : ${testScript}"
-    $cmd = "/home/$user/${testScript} -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+    $cmd = "./${testScript} -logFolder . > ./TestExecutionConsole.log"
     $testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
 
     while ((Get-Job -Id $testJob).State -eq "Running" ) {
-        $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt"
+        $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat ./state.txt"
         Write-LogInfo "Current Test Status : $currentStatus"
         Wait-Time -seconds 20
     }
@@ -115,7 +115,7 @@ function Main {
         Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport
 
         # Download test logs
-        $files = "/home/$user/state.txt, /home/$user/${testScript}.log, /home/$user/TestExecutionConsole.log"
+        $files = "./state.txt, ./${testScript}.log, ./TestExecutionConsole.log"
         Copy-RemoteFiles -download -downloadFrom $hs1VIP -files $files -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
         $finalStatus = Get-Content $LogDir\state.txt
         if ($finalStatus -imatch "TestFailed") {
@@ -136,12 +136,12 @@ function Main {
 
         # Collect L1 VM properties
         Run-LinuxCmd -username $user -password $password -ip $hs1VIP -port $hs1vm1sshport -command ". utils.sh && collect_VM_properties" -runAsSudo | Out-Null
-        Copy-RemoteFiles -download -downloadFrom $hs1VIP -files "/home/$user/VM_properties.csv" -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
+        Copy-RemoteFiles -download -downloadFrom $hs1VIP -files "./VM_properties.csv" -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
 
         if ($testResult -imatch $resultPass) {
-            $files = "/home/$user/ntttcpConsoleLogs, /home/$user/ntttcpTest.log, /home/$user/report.log, /home/$user/nested_properties.csv"
+            $files = "./ntttcpConsoleLogs, ./ntttcpTest.log, ./report.log, ./nested_properties.csv"
             Copy-RemoteFiles -download -downloadFrom $hs1VIP -files $files -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
-            $files = "/home/$user/ntttcp-test-logs-receiver.tar, /home/$user/ntttcp-test-logs-sender.tar"
+            $files = "./ntttcp-test-logs-receiver.tar, ./ntttcp-test-logs-sender.tar"
             Copy-RemoteFiles -download -downloadFrom $hs1VIP -files $files -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
 
             $ntttcpReportLog = Get-Content -Path "$LogDir\report.log"

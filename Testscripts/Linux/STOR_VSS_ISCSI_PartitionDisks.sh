@@ -50,8 +50,8 @@ function iScsi_Connect() {
 #######################################################################
 
 # Cleanup any old summary.log files
-if [ -e ~/summary.log ]; then
-    rm -rf ~/summary.log
+if [ -e ./summary.log ]; then
+    rm -rf ./summary.log
 fi
 
 # Source utils.sh

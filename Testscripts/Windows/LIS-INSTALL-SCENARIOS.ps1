@@ -35,7 +35,7 @@ Function Check-Modules() {
     # Run the remote script
     Run-LinuxCmd -username $user -password $password -ip $allVMData.PublicIP -port $allVMData.SSHPort -command "python ${remoteScript}" -runAsSudo
     Run-LinuxCmd -username $user -password $password -ip $allVMData.PublicIP -port $allVMData.SSHPort -command "mv Runtime.log ${remoteScript}.log" -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $allVMData.PublicIP -files "/home/$user/state.txt,/home/${user}/${remoteScript}.log" `
+    Copy-RemoteFiles -download -downloadFrom $allVMData.PublicIP -files "./state.txt,./${remoteScript}.log" `
         -downloadTo $LogDir -port $allVMData.SSHPort -username $user -password $password
     $testStatus = Get-Content $LogDir\state.txt
     if ($testStatus -ne "TestCompleted") {

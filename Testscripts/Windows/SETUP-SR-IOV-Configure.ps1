@@ -186,9 +186,9 @@ function Main {
         ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
         -username $VMUsername -password $VMPassword -upload
     Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
-        $VMPassword -command "chmod +x /home/${VMUsername}/*.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+        $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
     Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUsername -password `
-        $VMPassword -command "chmod +x /home/${VMUsername}/*.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+        $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
     Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
         $VMPassword -command "./enablePasswordLessRoot.sh  /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo
 

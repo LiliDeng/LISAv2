@@ -33,7 +33,7 @@ testFile="$mntDir/testDir/testFile"
 CheckCallTracesWithDelay 1
 
 # Read/Write mount point
-mkdir $testDir 2> ~/summary.log
+mkdir $testDir 2> ./summary.log
 check_exit_status "Create file $testDir" "exit"
 
 dd if=/dev/zero of=/root/testFile bs=64 count=1

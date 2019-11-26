@@ -8,7 +8,8 @@
 # netperf_server.sh
 #         This script starts netperf in server mode on dependency VM.
 #######################################################################
-cd ~
+homeDir=$(pwd)
+cd ${homeDir}
 
 . net_constants.sh || {
     echo "unable to source net_constants.sh!"
@@ -174,14 +175,14 @@ if [ $? -ne 0 ]; then
 fi
 
 #go back to test root folder
-cd ~
+cd ${homeDir}
 
 # Start netperf server instances
 LogMsg "Starting netperf in server mode."
 
 echo "netperfRunning" > state.txt
 LogMsg "Netperf server instances are now ready to run."
-netserver -L ${STATIC_IP2} >> ~/summary.log
+netserver -L ${STATIC_IP2} >> ./summary.log
 if [ $? -ne 0 ]; then
     LogMsg "Unable to start netperf in server mode."
     SetTestStateFailed

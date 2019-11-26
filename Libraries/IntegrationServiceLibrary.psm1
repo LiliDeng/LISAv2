@@ -835,7 +835,7 @@ Function New-Backup {
 	# Delete file on the VM
 	$vmState = $(Get-VM -name $VMName -ComputerName $HvServer).state
 	if (-not $vmState) {
-		Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMPort -command "rm /home/$user/1" -runAsSudo
+		Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMPort -command "rm ./1" -runAsSudo
 		if (-not $?) {
 			Write-LogErr "Cannot delete test file!"
 			return $False
@@ -939,17 +939,17 @@ Function Check-VMStateAndFileStatus {
 	# only check restore file when IP available
 	$stsipv4 = Test-NetConnection $VMIpv4 -Port 22 -WarningAction SilentlyContinue
 	if ($stsipv4.TcpTestSucceeded) {
-		$sts = Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMPort -command "stat /home/$user/1"
+		$sts = Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMPort -command "stat ./1"
 		if (-not $sts) {
-			Write-LogErr "No /home/$user/1 file after restore"
+			Write-LogErr "No ./1 file after restore"
 			return $False
 		}
 		else {
-			Write-LogInfo "there is /home/$user/1 file after restore"
+			Write-LogInfo "there is ./1 file after restore"
 		}
 	}
 	else {
-		Write-LogInfo "Ignore checking file /home/$user/1 when no network"
+		Write-LogInfo "Ignore checking file ./1 when no network"
 	}
 	return $True
 }

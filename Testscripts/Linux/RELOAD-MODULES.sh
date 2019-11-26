@@ -78,7 +78,7 @@ fi
 VerifyModules()
 {
     for module in "${HYPERV_MODULES[@]}"; do
-        MODULES=~/modules.txt
+        MODULES=./modules.txt
         lsmod | grep "hv_*" > $MODULES
         lsmod | grep "hyperv" >> $MODULES
         if ! grep -q "$module" "$MODULES"; then

@@ -21,7 +21,7 @@
 # Source constants file and initialize most common variables
 #
 UtilsInit
-
+homeDir=$(pwd)
 GetGuestGeneration
 if [ "$os_GENERATION" -eq 1 ] && [ "$HotAdd" = "True" ]; then
     SetTestStateSkipped
@@ -91,7 +91,7 @@ else
     LogMsg "Data read successfully from the CDROM"
 fi
 
-cd ~
+cd ${homeDir}
 umount /mnt/
 sts=$?
 if [ 0 -ne ${sts} ]; then

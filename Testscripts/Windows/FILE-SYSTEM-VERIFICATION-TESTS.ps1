@@ -157,7 +157,7 @@ function Main {
         # We first need to move copy from root folder to user folder for
         # Collect-TestLogs function to work
         Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-            -password $password -command "cp * /home/$user" -ignoreLinuxExitCode:$true | Out-Null
+            -password $password -command "if [[ `"${user}`" -ne `"root`" ]];cp * /home/$user;fi" -ignoreLinuxExitCode:$true | Out-Null
         $testResult = Collect-TestLogs -LogsDestination $LogDir -ScriptName `
             $currentTestData.files.Split('\')[3].Split('.')[0] -TestType "sh"  -PublicIP `
             $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $user `

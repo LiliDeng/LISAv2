@@ -33,12 +33,12 @@ function Main {
     #!/bin/bash
         __freeMem=`$(cat /proc/meminfo | grep -i MemFree | awk '{ print `$2 }')
         __freeMem=`$((__freeMem/1024))
-        echo ConsumeMemory: Free Memory found `$__freeMem MB >> /home/$VMUserName/ConsumeMem.log 2>&1
+        echo ConsumeMemory: Free Memory found `$__freeMem MB >> ./ConsumeMem.log 2>&1
         __threads=32
         __chunks=`$((`$__freeMem / `$__threads))
-        echo "Going to start `$__threads instance(s) of stress-ng every 2 seconds, each consuming `$__chunks MB memory" >> /home/$VMUserName/ConsumeMem.log 2>&1
+        echo "Going to start `$__threads instance(s) of stress-ng every 2 seconds, each consuming `$__chunks MB memory" >> ./ConsumeMem.log 2>&1
         stress-ng -m `$__threads --vm-bytes `${__chunks}M -t 120 --backoff 1500000
-        echo "Waiting for jobs to finish" >> /home/$VMUserName/ConsumeMem.log 2>&1
+        echo "Waiting for jobs to finish" >> ./ConsumeMem.log 2>&1
         wait
         exit 0
 "@
@@ -125,7 +125,7 @@ function Main {
     # Send Command to consume
     Set-Content $filename "$cmdToVM"
     Copy-RemoteFiles -uploadTo $Ipv4 -port $VMPort -files $filename -username $VMUserName -password $VMPassword -upload
-    $consume = "cd /home/$VMUserName && chmod u+x ${filename} && sed -i 's/\r//g' ${filename} && ./${filename}"
+    $consume = "cd . && chmod u+x ${filename} && sed -i 's/\r//g' ${filename} && ./${filename}"
     $job1 = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort -command $consume -runAsSudo -RunInBackGround
     if (-not $job1) {
         Write-LogErr "Unable to start job for creating pressure on $VMName"
@@ -197,7 +197,7 @@ function Main {
     # Wait for 2 minutes and check call traces
     $trace = "${LogDir}\check_traces.log"
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort ". utils.sh && UtilsInit && CheckCallTracesWithDelay 120" -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/check_traces.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./check_traces.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $trace
     if ($contents -contains "ERROR") {

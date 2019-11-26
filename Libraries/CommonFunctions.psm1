@@ -392,74 +392,96 @@ function Is-VmAlive {
 
 Function Provision-VMsForLisa($allVMData, $installPackagesOnRoleNames)
 {
-	$keysGenerated = $false
-	foreach ( $vmData in $allVMData )
-	{
-		Write-LogInfo "Configuring $($vmData.RoleName) for LISA test..."
-		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\utils.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\enablePasswordLessRoot.sh" -username $user -password $password -upload
-		$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x /home/$user/*.sh" -runAsSudo
-		$rootPasswordSet = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $user -password $password -runAsSudo `
-			-command ("/home/{0}/enableRoot.sh -password {1}" -f @($user, $password.Replace('"','')))
-		Write-LogInfo $rootPasswordSet
-		if (( $rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL" ))
+	if ("root" -eq $user) {
+		$keysGenerated = $false
+		foreach ( $vmData in $allVMData )
 		{
-			Write-LogInfo "root user enabled for $($vmData.RoleName) and password set to $password"
-		}
-		else
-		{
-			Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
-		}
-		$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "cp -ar /home/$user/*.sh ."
-		if ( $keysGenerated )
-		{
-			Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files "$LogDir\sshFix.tar" -username "root" -password $password -upload
-			$keyCopyOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
-			Write-LogInfo $keyCopyOut
-			if ( $keyCopyOut -imatch "KEY_COPIED_SUCCESSFULLY" )
+			Write-LogInfo "Configuring $($vmData.RoleName) for LISA test..."
+			Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\utils.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\enablePasswordLessRoot.sh" -username $user -password $password -upload
+			$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x /home/$user/*.sh" -runAsSudo
+			$rootPasswordSet = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
+				-username $user -password $password -runAsSudo `
+				-command ("/home/{0}/enableRoot.sh -password {1}" -f @($user, $password.Replace('"','')))
+			Write-LogInfo $rootPasswordSet
+			if (( $rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL" ))
 			{
-				$keysGenerated = $true
-				Write-LogInfo "SSH keys copied to $($vmData.RoleName)"
-				$md5sumCopy = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
-				if ( $md5sumGen -eq $md5sumCopy )
+				Write-LogInfo "root user enabled for $($vmData.RoleName) and password set to $password"
+			}
+			else
+			{
+				Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
+			}
+			$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "cp -ar /home/$user/*.sh ."
+			if ( $keysGenerated )
+			{
+				Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files "$LogDir\sshFix.tar" -username "root" -password $password -upload
+				$keyCopyOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
+				Write-LogInfo $keyCopyOut
+				if ( $keyCopyOut -imatch "KEY_COPIED_SUCCESSFULLY" )
 				{
-					Write-LogInfo "md5sum check success for .ssh/id_rsa."
+					$keysGenerated = $true
+					Write-LogInfo "SSH keys copied to $($vmData.RoleName)"
+					$md5sumCopy = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
+					if ( $md5sumGen -eq $md5sumCopy )
+					{
+						Write-LogInfo "md5sum check success for .ssh/id_rsa."
+					}
+					else
+					{
+						Throw "md5sum check failed for .ssh/id_rsa. Aborting test."
+					}
 				}
 				else
 				{
-					Throw "md5sum check failed for .ssh/id_rsa. Aborting test."
+					Throw "Error in copying SSH key to $($vmData.RoleName)"
 				}
 			}
 			else
 			{
-				Throw "Error in copying SSH key to $($vmData.RoleName)"
+				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "rm -rf /root/sshFix*"
+				$keyGenOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
+				Write-LogInfo $keyGenOut
+				if ( $keyGenOut -imatch "KEY_GENERATED_SUCCESSFULLY" )
+				{
+					$keysGenerated = $true
+					Write-LogInfo "SSH keys generated in $($vmData.RoleName)"
+					Copy-RemoteFiles -download -downloadFrom $vmData.PublicIP -port $vmData.SSHPort  -files "/root/sshFix.tar" -username "root" -password $password -downloadTo $LogDir
+					$md5sumGen = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
+				}
+				else
+				{
+					Throw "Error in generating SSH key in $($vmData.RoleName)"
+				}
 			}
 		}
-		else
+
+		$packageInstallJobs = @()
+		foreach ( $vmData in $allVMData )
 		{
-			$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "rm -rf /root/sshFix*"
-			$keyGenOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
-			Write-LogInfo $keyGenOut
-			if ( $keyGenOut -imatch "KEY_GENERATED_SUCCESSFULLY" )
+			if ( $installPackagesOnRoleNames )
 			{
-				$keysGenerated = $true
-				Write-LogInfo "SSH keys generated in $($vmData.RoleName)"
-				Copy-RemoteFiles -download -downloadFrom $vmData.PublicIP -port $vmData.SSHPort  -files "/root/sshFix.tar" -username "root" -password $password -downloadTo $LogDir
-				$md5sumGen = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
+				if ( $installPackagesOnRoleNames -imatch $vmData.RoleName )
+				{
+					Write-LogInfo "Executing $scriptName ..."
+					$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName" -RunInBackground
+					$packageInstallObj = New-Object PSObject
+					Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
+					if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
+						Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $vmData.RoleName
+					} else {
+						Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $($($vmData.ResourceGroupName) + "-" + $($vmData.RoleName))
+					}
+					Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name PublicIP -Value $vmData.PublicIP
+					Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name SSHPort -Value $vmData.SSHPort
+					$packageInstallJobs += $packageInstallObj
+					#endregion
+				}
+				else
+				{
+					Write-LogInfo "$($vmData.RoleName) is set to NOT install packages. Hence skipping package installation on this VM."
+				}
 			}
 			else
-			{
-				Throw "Error in generating SSH key in $($vmData.RoleName)"
-			}
-		}
-	}
-
-	$packageInstallJobs = @()
-	foreach ( $vmData in $allVMData )
-	{
-		if ( $installPackagesOnRoleNames )
-		{
-			if ( $installPackagesOnRoleNames -imatch $vmData.RoleName )
 			{
 				Write-LogInfo "Executing $scriptName ..."
 				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName" -RunInBackground
@@ -475,51 +497,31 @@ Function Provision-VMsForLisa($allVMData, $installPackagesOnRoleNames)
 				$packageInstallJobs += $packageInstallObj
 				#endregion
 			}
-			else
-			{
-				Write-LogInfo "$($vmData.RoleName) is set to NOT install packages. Hence skipping package installation on this VM."
-			}
 		}
-		else
-		{
-			Write-LogInfo "Executing $scriptName ..."
-			$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName" -RunInBackground
-			$packageInstallObj = New-Object PSObject
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
-			if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $vmData.RoleName
-			} else {
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $($($vmData.ResourceGroupName) + "-" + $($vmData.RoleName))
-			}
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name PublicIP -Value $vmData.PublicIP
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name SSHPort -Value $vmData.SSHPort
-			$packageInstallJobs += $packageInstallObj
-			#endregion
-		}
-	}
 
-	$packageInstallJobsRunning = $true
-	while ($packageInstallJobsRunning)
-	{
-		$packageInstallJobsRunning = $false
-		foreach ( $job in $packageInstallJobs )
+		$packageInstallJobsRunning = $true
+		while ($packageInstallJobsRunning)
 		{
-			if ( (Get-Job -Id $($job.ID)).State -eq "Running" )
+			$packageInstallJobsRunning = $false
+			foreach ( $job in $packageInstallJobs )
 			{
-				$currentStatus = Run-LinuxCmd -ip $job.PublicIP -port $job.SSHPort -username "root" -password $password -command "tail -n 1 /root/provisionLinux.log"
-				Write-LogInfo "Package Installation Status for $($job.RoleName) : $currentStatus"
-				$packageInstallJobsRunning = $true
+				if ( (Get-Job -Id $($job.ID)).State -eq "Running" )
+				{
+					$currentStatus = Run-LinuxCmd -ip $job.PublicIP -port $job.SSHPort -username "root" -password $password -command "tail -n 1 /root/provisionLinux.log"
+					Write-LogInfo "Package Installation Status for $($job.RoleName) : $currentStatus"
+					$packageInstallJobsRunning = $true
+				}
+				else
+				{
+					Copy-RemoteFiles -download -downloadFrom $job.PublicIP -port $job.SSHPort -files "/root/provisionLinux.log" `
+						-username "root" -password $password -downloadTo $LogDir
+					Rename-Item -Path "$LogDir\provisionLinux.log" -NewName "$($job.RoleName)-provisionLinux.log" -Force | Out-Null
+				}
 			}
-			else
+			if ( $packageInstallJobsRunning )
 			{
-				Copy-RemoteFiles -download -downloadFrom $job.PublicIP -port $job.SSHPort -files "/root/provisionLinux.log" `
-					-username "root" -password $password -downloadTo $LogDir
-				Rename-Item -Path "$LogDir\provisionLinux.log" -NewName "$($job.RoleName)-provisionLinux.log" -Force | Out-Null
+				Wait-Time -seconds 10
 			}
-		}
-		if ( $packageInstallJobsRunning )
-		{
-			Wait-Time -seconds 10
 		}
 	}
 }
@@ -562,7 +564,7 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 				$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "uname -r"
 				Write-LogInfo "Executing $scriptName ..."
 				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user `
-					-password $password -command "/home/$user/$scriptName -CustomKernel '$CustomKernelLabel' -logFolder /home/$user" `
+					-password $password -command "./$scriptName -CustomKernel '$CustomKernelLabel' -logFolder ." `
 					-RunInBackground -runAsSudo
 				$packageInstallObj = New-Object PSObject
 				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
@@ -804,7 +806,7 @@ function Enable-SRIOVInAllVMs($allVMData, $TestProvider)
 				Write-LogInfo "Mellanox Adapter detected in $($vmData.RoleName)."
 				Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\$scriptName" -username $user -password $password -upload
 				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh" -runAsSudo
-				$sriovOutput = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "/home/$user/$scriptName" -runAsSudo
+				$sriovOutput = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "./$scriptName" -runAsSudo
 				$sriovDetectedCount += 1
 			}
 			else
@@ -990,7 +992,7 @@ Function Detect-LinuxDistro() {
 	$null = Copy-RemoteFiles  -upload -uploadTo $VIP -port $SSHport -files ".\Testscripts\Linux\DetectLinuxDistro.sh" -username $testVMUser -password $testVMPassword 2>&1 | Out-Null
 	$null = Run-LinuxCmd -username $testVMUser -password $testVMPassword -ip $VIP -port $SSHport -command "chmod +x *.sh" -runAsSudo 2>&1 | Out-Null
 
-	$DistroName = Run-LinuxCmd -username $testVMUser -password $testVMPassword -ip $VIP -port $SSHport -command "bash /home/$testVMUser/DetectLinuxDistro.sh" -runAsSudo
+	$DistroName = Run-LinuxCmd -username $testVMUser -password $testVMPassword -ip $VIP -port $SSHport -command "bash ./DetectLinuxDistro.sh" -runAsSudo
 
 	if (($DistroName -imatch "Unknown") -or (!$DistroName)) {
 		Write-LogErr "Linux distro detected : $DistroName"
@@ -1018,7 +1020,7 @@ Function Remove-AllFilesFromHomeDirectory($AllDeployedVMs, $User, $Password)
 		{
 			Write-LogInfo "Removing all files logs from IP : $testIP PORT : $testPort"
 			$Null = Run-LinuxCmd -username $User -password $Password -ip $testIP -port $testPort -command 'rm -rf *' -runAsSudo
-			Write-LogInfo "All files removed from /home/$user successfully. VM IP : $testIP PORT : $testPort"
+			Write-LogInfo "All files removed from current $user successfully. VM IP : $testIP PORT : $testPort"
 		}
 		catch
 		{
@@ -1710,7 +1712,7 @@ Function Is-StressNgInstalled {
     Copy-RemoteFiles -uploadTo $VMIpv4 -port $VMSSHPort -files $FILE_NAME -username $user -password $password -upload
     # execute command
     $retVal = Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMSSHPort `
-        -command "echo $password | cd /home/$user && chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}" -runAsSudo
+        -command "echo $password | chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}" -runAsSudo
     return $retVal
 }
 
@@ -1726,12 +1728,12 @@ Function Start-StressNg {
 #!/bin/bash
         __freeMem=`$(cat /proc/meminfo | grep -i MemFree | awk '{ print `$2 }')
         __freeMem=`$((__freeMem/1024))
-        echo ConsumeMemory: Free Memory found `$__freeMem MB >> /home/$user/HotAdd.log 2>&1
+        echo ConsumeMemory: Free Memory found `$__freeMem MB >> ./HotAdd.log 2>&1
         __threads=32
         __chunks=`$((`$__freeMem / `$__threads))
-        echo "Going to start `$__threads instance(s) of stress-ng every 2 seconds, each consuming 128MB memory" >> /home/$user/HotAdd.log 2>&1
+        echo "Going to start `$__threads instance(s) of stress-ng every 2 seconds, each consuming 128MB memory" >> ./HotAdd.log 2>&1
         stress-ng -m `$__threads --vm-bytes `${__chunks}M -t 120 --backoff 1500000
-        echo "Waiting for jobs to finish" >> /home/$user/HotAdd.log 2>&1
+        echo "Waiting for jobs to finish" >> ./HotAdd.log 2>&1
         wait
         exit 0
 "@
@@ -1743,7 +1745,7 @@ Function Start-StressNg {
         -username $user -password $password -upload
     # execute command as job
     $retVal = Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMSSHPort `
-        -command "echo $password | cd /home/$user && chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}" -runAsSudo -RunInBackground
+        -command "echo $password | chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}" -runAsSudo -RunInBackground
     return $retVal
 }
 # This function runs the remote script on VM.
@@ -1760,9 +1762,9 @@ Function Invoke-RemoteScriptAndCheckStateFile
     $stateFile = "${remoteScript}.state.txt"
     $Hypervcheck = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > ${remoteScript}.log`""
     Run-LinuxCmd -username $VMUser -password $VMPassword -ip $VMIpv4 -port $VMPort $Hypervcheck -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $VMIpv4 -files "/home/${user}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $VMIpv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUser -password $password
-    Copy-RemoteFiles -download -downloadFrom $VMIpv4 -files "/home/${user}/${remoteScript}.log" `
+    Copy-RemoteFiles -download -downloadFrom $VMIpv4 -files "./${remoteScript}.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUser -password $VMPassword
     Move-Item -Path "${LogDir}\state.txt" -Destination "${LogDir}\$stateFile" -Force
     $contents = Get-Content -Path $LogDir\$stateFile
@@ -1820,14 +1822,14 @@ function Get-MemoryStressNG([String]$VMIpv4, [String]$VMSSHPort, [int]$timeoutSt
     $cmdToVM = @"
 #!/bin/bash
         if [ ! -e /proc/meminfo ]; then
-          echo "ConsumeMemory: no meminfo found. Make sure /proc is mounted" >> /home/$user/HotAdd.log 2>&1
+          echo "ConsumeMemory: no meminfo found. Make sure /proc is mounted" >> ./HotAdd.log 2>&1
           exit 100
         fi
 
-        rm ~/HotAddErrors.log -f
+        rm ./HotAddErrors.log -f
         __totalMem=`$(cat /proc/meminfo | grep -i MemTotal | awk '{ print `$2 }')
         __totalMem=`$((__totalMem/1024))
-        echo "ConsumeMemory: Total Memory found `$__totalMem MB" >> /home/$user/HotAdd.log 2>&1
+        echo "ConsumeMemory: Total Memory found `$__totalMem MB" >> ./HotAdd.log 2>&1
         declare -i __chunks
         declare -i __threads
         declare -i duration
@@ -1859,7 +1861,7 @@ function Get-MemoryStressNG([String]$VMIpv4, [String]$VMSSHPort, [int]$timeoutSt
         fi
         echo "Stress-ng info: `$__threads threads :: `$__chunks MB chunk size :: `$((`$timeout/1000000)) seconds between chunks :: `$duration seconds total stress time" >> /root/HotAdd.log 2>&1
         stress-ng -m `$__threads --vm-bytes `${__chunks}M -t `$duration --backoff `$timeout
-        echo "Waiting for jobs to finish" >> /home/$user/HotAdd.log 2>&1
+        echo "Waiting for jobs to finish" >> ./HotAdd.log 2>&1
         wait
         exit 0
 "@
@@ -1870,7 +1872,7 @@ function Get-MemoryStressNG([String]$VMIpv4, [String]$VMSSHPort, [int]$timeoutSt
     Copy-RemoteFiles -uploadTo $VMIpv4 -port $VMSSHPort -files $FILE_NAME -username $user -password $password -upload
     Write-LogInfo "Copy-RemoteFiles done"
     # execute command
-    $sendCommand = "echo $password | cd /home/$user && chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}"
+    $sendCommand = "echo $password | chmod u+x ${FILE_NAME} && sed -i 's/\r//g' ${FILE_NAME} && ./${FILE_NAME}"
     $retVal = Run-LinuxCmd -username $user -password $password -ip $VMIpv4 -port $VMSSHPort -command $sendCommand -runAsSudo -RunInBackground
     return $retVal
 }
@@ -2306,7 +2308,7 @@ function Collect-GcovData {
         New-Item -Type directory -Path ".\CodeCoverage\logs\${logDirName}"
         $logDest = Resolve-Path ".\CodeCoverage\logs\${logDirName}"
 
-        Copy-RemoteFiles -download -downloadFrom $ip -port $port -files "/home/$username/$fileName" `
+        Copy-RemoteFiles -download -downloadFrom $ip -port $port -files "./$fileName" `
             -downloadTo $logDest -username $username -password $password | Out-Null
 
         if (Test-Path "${logDir}\${fileName}") {

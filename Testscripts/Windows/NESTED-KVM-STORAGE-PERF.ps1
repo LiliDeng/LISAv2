@@ -30,11 +30,11 @@ function Start-TestExecution ($ip, $port) {
 	Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "chmod +x *" -runAsSudo
 
 	Write-LogInfo "Executing : ${testScript}"
-	$cmd = "/home/$user/${testScript} > /home/$user/TestExecutionConsole.log"
+	$cmd = "./${testScript} > ./TestExecutionConsole.log"
 	$testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
 
 	while ((Get-Job -Id $testJob).State -eq "Running") {
-		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt"
+		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat ./state.txt"
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
@@ -133,7 +133,7 @@ function Main() {
 
 		Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport
 
-		$files="/home/$user/state.txt, /home/$user/$testScript.log, /home/$user/TestExecutionConsole.log"
+		$files="./state.txt, ./$testScript.log, ./TestExecutionConsole.log"
 		Copy-RemoteFiles -download -downloadFrom $hs1VIP -files $files -downloadTo $LogDir -port $hs1vm1sshport -username $user -password $password
 		$finalStatus = Get-Content $LogDir\state.txt
 		if ($finalStatus -imatch "TestFailed") {

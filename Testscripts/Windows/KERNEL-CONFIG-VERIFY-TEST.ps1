@@ -65,11 +65,11 @@ function Main {
         $remoteLogFile = "${remoteScript}.Log.txt"
         $ConfigTest = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > ${remoteScript}.log`""
         Run-LinuxCmd -username $user -password $password -ip $Ipv4 -port $VMPort -runMaxAllowedTime 500 $ConfigTest -runAsSudo
-        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${user}/state.txt" `
+        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         	-downloadTo $LogDir -port $VMPort -username $user -password $password
-        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${user}/${remoteScript}.log" `
+        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./${remoteScript}.log" `
         	-downloadTo $LogDir -port $VMPort -username $user -password $password
-        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${user}/config.diff" `
+        Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./config.diff" `
         	-downloadTo $LogDir -port $VMPort -username $user -password $password
         rename-item -path "${LogDir}\${remoteScript}.log" -newname $remoteLogFile
 

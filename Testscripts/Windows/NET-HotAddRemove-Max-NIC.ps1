@@ -75,9 +75,9 @@ function Main {
     $stateFile = "${LogDir}\state.txt"
     $NETMaxNICs = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript}  > NETMaxNICs.log`""
     $null = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $NETMaxNICs -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/NETMaxNICs.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./NETMaxNICs.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     if (($contents -eq "TestAborted") -or ($contents -eq "TestFailed")) {
@@ -119,9 +119,9 @@ function Main {
     $logFile = "${LogDir}\NETVerifyHotRemoveMultiNIC.log"
     $HotRemoveMultiNIC = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript2} ${action} > NETVerifyHotRemoveMultiNIC.log`""
     $null = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $HotRemoveMultiNIC -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/NETVerifyHotRemoveMultiNIC.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./NETVerifyHotRemoveMultiNIC.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     $contents2 = Get-Content -Path $logFile

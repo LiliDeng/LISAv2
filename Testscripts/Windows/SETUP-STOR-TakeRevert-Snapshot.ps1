@@ -58,7 +58,7 @@ function Main {
     #Creating a file for snapshot
     #
     $sts = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-           -command "touch /home/$VMUserName/PostSnapData.txt"
+           -command "touch ./PostSnapData.txt"
 
     #
     #Run the guest VM side script
@@ -66,9 +66,9 @@ function Main {
     $stateFile = "${LogDir}\state.txt"
     $LISDisk = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > LISDisk.log`""
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $LISDisk -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/LISDisk.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./LISDisk.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     if (($contents -eq "TestAborted") -or ($contents -eq "TestFailed")) {
@@ -127,7 +127,7 @@ function Main {
                          -RetryCount 60 -RetryInterval 4
     Write-LogInfo "Checking if the test file is still present..."
     $sts = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $newIpv4 -port $VMPort `
-           -ignoreLinuxExitCode -command  "stat /home/$VMUserName/PostSnapData.txt 2>/dev/null"
+           -ignoreLinuxExitCode -command  "stat ./PostSnapData.txt 2>/dev/null"
     if ( $sts) {
         Write-LogErr "File still present in VM"
         return "FAIL"

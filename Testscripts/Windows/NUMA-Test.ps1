@@ -69,7 +69,7 @@ function Main {
         Write-LogErr "Error: NumaNodes and the number of CPU does not match."
         return "FAIL"
     }
-    $cmdAddConstants = "echo `"expected_number=$($numCPUs/$vcpuOnNode)`" >> /home/${VMUserName}/constants.sh"
+    $cmdAddConstants = "echo `"expected_number=$($numCPUs/$vcpuOnNode)`" >> ./constants.sh"
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port `
         $VMPort -command $cmdAddConstants -runAsSudo
     if (-not $?) {
@@ -79,9 +79,9 @@ function Main {
 
     $cmdRunNuma = "echo '${VMPassword}' | sudo -S -s eval `"export HOME=``pwd``;bash ${remoteScript} > NUMA-Test.log`""
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort $cmdRunNuma -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/state.txt" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./state.txt" `
         -downloadTo $LogDir -port $VmPort -username $VMUserName -password $VMPassword
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/NUMA-Test.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./NUMA-Test.log" `
         -downloadTo $LogDir -port $VmPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $stateFile
     if (($contents -eq "TestAborted") -or ($contents -eq "TestFailed")) {

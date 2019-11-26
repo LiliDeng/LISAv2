@@ -12,7 +12,7 @@ function Start-TestExecution ($ip, $port, $cmd) {
 	Write-LogInfo "Executing : ${cmd}"
 	$testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
 	while ((Get-Job -Id $testJob).State -eq "Running" ) {
-		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt"
+		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat ./state.txt"
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
@@ -126,22 +126,22 @@ function Main () {
 
 		if($TestPlatform -eq "Azure")
 		{
-			$cmd = "/home/$user/${testScript} -role server -clientIP $hs2secondip -serverIP $hs1secondip -level1ClientIP $hs2secondip -level1User $user -level1Password $password -level1Port 22 -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role server -clientIP $hs2secondip -serverIP $hs1secondip -level1ClientIP $hs2secondip -level1User $user -level1Password $password -level1Port 22 -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport -cmd $cmd
 
-			$cmd = "/home/$user/${testScript} -role client -clientIP $hs2secondip -serverIP $hs1secondip -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role client -clientIP $hs2secondip -serverIP $hs1secondip -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs2VIP -port $hs2vm1sshport -cmd $cmd
 		}
 		elseif ($TestPlatform -eq "HyperV") {
-			$cmd = "/home/$user/${testScript} -role server -level1ClientIP $hs2VIP -level1User $user -level1Password $password -level1Port $hs2vm1sshport -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role server -level1ClientIP $hs2VIP -level1User $user -level1Password $password -level1Port $hs2vm1sshport -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport -cmd $cmd
 
-			$cmd = "/home/$user/${testScript} -role client -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role client -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs2VIP -port $hs2vm1sshport -cmd $cmd
 		}
 
 		# Download test logs
-		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/state.txt, /home/$user/${testScript}.log, /home/$user/TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./state.txt, ./${testScript}.log, ./TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
 		$finalStatus = Get-Content $LogDir\state.txt
 		if ($finalStatus -imatch "TestFailed")
 		{
@@ -164,13 +164,13 @@ function Main () {
 		}
 
 		Run-LinuxCmd -username $user -password $password -ip $hs2VIP -port $hs2vm1sshport -command ". utils.sh && collect_VM_properties" -runAsSudo
-		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/VM_properties.csv" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./VM_properties.csv" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
 
 		if ($testResult -imatch $resultPass)
 		{
-			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/ntttcpConsoleLogs, /home/$user/ntttcpTest.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
-			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/nested_properties.csv, /home/$user/report.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
-			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/ntttcp-test-logs-receiver.tar, /home/$user/ntttcp-test-logs-sender.tar" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./ntttcpConsoleLogs, ./ntttcpTest.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./nested_properties.csv, ./report.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+			Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./ntttcp-test-logs-receiver.tar, ./ntttcp-test-logs-sender.tar" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
 
 			$ntttcpReportLog = Get-Content -Path "$LogDir\report.log"
 			if (!$ntttcpReportLog)

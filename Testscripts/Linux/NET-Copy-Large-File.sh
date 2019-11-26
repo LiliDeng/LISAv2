@@ -21,6 +21,7 @@
 #   9. Make new md5sum of received file and compare to the one calculated earlier
 #############################################################################################################
 remote_user=$(whoami)
+homeDir=$(pwd)
 . net_constants.sh || {
     echo "unable to source net_constants.sh!"
     echo "TestAborted" > state.txt
@@ -120,7 +121,7 @@ fi
 
 # Check disk size on local vm
 LogMsg "Checking for local disk space"
-IsFreeSpace "/home/${SUDO_USER}" "$file_size"
+IsFreeSpace "${homeDir}" "$file_size"
 if [ 0 -ne $? ]; then
     LogErr "Not enough free space on current partition to create the test file"
     SetTestStateFailed
@@ -130,14 +131,14 @@ LogMsg "Enough free space locally to create the file"
 
 LogMsg "Checking for disk space on $STATIC_IP2"
 # Check disk size on remote vm. Cannot use IsFreeSpace function directly. Need to export utils.sh to the remote_vm, source it and then access the functions therein
-$scp_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no utils.sh $ip_cmd:/tmp
+$scp_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no utils.sh $ip_cmd:/tmp
 if [ 0 -ne $? ]; then
     LogErr "Cannot copy utils.sh to $STATIC_IP2:/tmp"
     SetTestStateFailed
     exit 0
 fi
 
-remote_home=$($ssh_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "
+remote_home=$($ssh_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "
     . /tmp/utils.sh
     IsFreeSpace \"\$HOME\" $file_size
     if [ 0 -ne \$? ]; then
@@ -171,15 +172,15 @@ else
 fi
 # create file locally with PID appended
 output_file=large_file_$$
-if [ -d "/home/${SUDO_USER}"/"$output_file" ]; then
-    rm -rf "/home/${SUDO_USER}"/"$output_file"
+if [ -d "${homeDir}"/"$output_file" ]; then
+    rm -rf "${homeDir}"/"$output_file"
 fi
 
-if [ -e "/home/${SUDO_USER}"/"$output_file" ]; then
-    rm -f "/home/${SUDO_USER}"/"$output_file"
+if [ -e "${homeDir}"/"$output_file" ]; then
+    rm -f "${homeDir}"/"$output_file"
 fi
 
-dd if=$file_source of="/home/${SUDO_USER}"/"$output_file" bs=1M count=$((file_size/1024/1024))
+dd if=$file_source of="${homeDir}"/"$output_file" bs=1M count=$((file_size/1024/1024))
 if [ 0 -ne $? ]; then
     LogErr "Unable to create file $output_file in $HOME"
     SetTestStateFailed
@@ -191,9 +192,9 @@ LogMsg "Successfully created $output_file"
 local_md5sum=$(md5sum $output_file | cut -f 1 -d ' ')
 
 # send file to remote_vm
-$scp_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$output_file" $ip_cmd:"$remote_home"/"$output_file"
+$scp_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$output_file" $ip_cmd:"$remote_home"/"$output_file"
 if [ 0 -ne $? ]; then
-    [ $NO_DELETE -eq 0 ] && rm -f "/home/${SUDO_USER}"/$output_file
+    [ $NO_DELETE -eq 0 ] && rm -f "${homeDir}"/$output_file
     LogErr "Unable to copy file $output_file to $STATIC_IP2:$remote_home/$output_file"
     SetTestStateFailed
     exit 0
@@ -204,10 +205,10 @@ LogMsg "Successfully sent $output_file to $STATIC_IP2:$remote_home/$output_file"
 [ $NO_DELETE -eq 0 ] && rm -f $output_file
 
 # copy file back from remote vm
-$scp_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no $ip_cmd:"$remote_home"/"$output_file" "/home/${SUDO_USER}"/"$output_file"
+$scp_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no $ip_cmd:"$remote_home"/"$output_file" "${homeDir}"/"$output_file"
 if [ 0 -ne $? ]; then
     #try to erase file from remote vm
-    [ $NO_DELETE -eq 0 ] && $ssh_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f \$HOME/$output_file"
+    [ $NO_DELETE -eq 0 ] && $ssh_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f \$HOME/$output_file"
     LogErr "Unable to copy from $STATIC_IP2:$remote_home/$output_file"
     SetTestStateFailed
     exit 0
@@ -215,20 +216,20 @@ fi
 LogMsg "Received $output_file from $STATIC_IP2"
 
 # delete remote file
-[ $NO_DELETE -eq 0 ] && $ssh_cmd -i "/home/${SUDO_USER}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f $remote_home/$output_file"
+[ $NO_DELETE -eq 0 ] && $ssh_cmd -i "${homeDir}"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f $remote_home/$output_file"
 
 # check md5sums
 remote_md5sum=$(md5sum $output_file | cut -f 1 -d ' ')
 
 if [ "$local_md5sum" != "$remote_md5sum" ]; then
-    [ $NO_DELETE -eq 0 ] && rm -f "/home/${SUDO_USER}"/$output_file
+    [ $NO_DELETE -eq 0 ] && rm -f "${homeDir}"/$output_file
     LogErr "md5sums differ. Files do not match"
     SetTestStateFailed
     exit 0
 fi
 
 # delete local file again
-[ $NO_DELETE -eq 0 ] && rm -f "/home/${SUDO_USER}"/$output_file
+[ $NO_DELETE -eq 0 ] && rm -f "${homeDir}"/$output_file
 
 LogMsg "Updating test case state to completed"
 SetTestStateCompleted

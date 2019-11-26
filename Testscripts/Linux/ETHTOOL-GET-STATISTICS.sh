@@ -5,7 +5,7 @@
 ChangeMTU() {
     test_iface=$1
     value=$2
-    LogMsg "Setting MTU $value on $test_iface" >> ~/summary.log
+    LogMsg "Setting MTU $value on $test_iface" >> ./summary.log
     sudo ip link set dev $test_iface mtu $value
     check_exit_status "MTU set to $value on $test_iface" "exit"
 }
@@ -30,23 +30,23 @@ ChangeMTU $net_interface 2048
 ChangeMTU $net_interface 4096
 
 # Get NIC statistics using ethtool
-LogMsg "Getting NIC statistics with ethtool" >> ~/summary.log
+LogMsg "Getting NIC statistics with ethtool" >> ./summary.log
 stats=$(ethtool -S $net_interface)
 if [ $? -ne 0 ]; then
-    LogErr "Failed to get NIC statistics with ethtool !" >> ~/summary.log
+    LogErr "Failed to get NIC statistics with ethtool !" >> ./summary.log
     SetTestStateFailed
     exit 0
 else
-    LogMsg "$stats" >> ~/summary.log
+    LogMsg "$stats" >> ./summary.log
 fi
-LogMsg "Getting NIC statistics per CPU with ethtool" >> ~/summary.log
+LogMsg "Getting NIC statistics per CPU with ethtool" >> ./summary.log
 statspcup=$(ethtool -S $net_interface | grep 'queue_')
 if [ $? -ne 0 ]; then
-    LogErr "Failed to get NIC statistics per CPU with ethtool !" >> ~/summary.log
+    LogErr "Failed to get NIC statistics per CPU with ethtool !" >> ./summary.log
     SetTestStateFailed
     exit 0
 else
-    LogMsg "$statspcup" >> ~/summary.log
+    LogMsg "$statspcup" >> ./summary.log
 fi
 
 SetTestStateCompleted

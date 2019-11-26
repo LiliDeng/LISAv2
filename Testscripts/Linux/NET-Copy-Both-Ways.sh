@@ -22,7 +22,7 @@
 ###############################################################################
 tmp="/tmp"
 remote_user="root"
-homeDir="/home/${SUDO_USER}"
+homeDir=$(pwd)
 
 . net_constants.sh || {
     echo "unable to source net_constants.sh!"

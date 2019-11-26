@@ -21,8 +21,8 @@ UtilsInit
 # Create the state.txt file so ICA knows we are running
 
 # Cleanup any old summary.log files
-if [ -e ~/summary.log ]; then
-    rm -rf ~/summary.log
+if [ -e ./summary.log ]; then
+    rm -rf ./summary.log
 fi
 
 # Search in /etc/udev and /lib/udev folders

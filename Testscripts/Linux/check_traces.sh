@@ -20,7 +20,7 @@ while true; do
     dmesg | grep -q "Memory hot add failed"
     if [[ $? -eq 0 ]] && \
         [[ $errorHasOccured -eq 0 ]]; then
-        echo "ERROR: 'Memory hot add failed' message is present in dmesg" >> ~/HotAddErrors.log 2>&1
+        echo "ERROR: 'Memory hot add failed' message is present in dmesg" >> ./HotAddErrors.log 2>&1
         errorHasOccured=1
     fi
 

@@ -26,7 +26,7 @@ param([String] $TestParams,
         $cmdToVM = @"
 #!/bin/bash
         if [ ! -e /proc/meminfo ]; then
-            echo ConsumeMemory: no meminfo found. Make sure /proc is mounted >> /home/$user/HotAdd.log 2>&1
+            echo ConsumeMemory: no meminfo found. Make sure /proc is mounted >> ./HotAdd.log 2>&1
             exit 100
         fi
         rm ~/HotAddErrors.log -f

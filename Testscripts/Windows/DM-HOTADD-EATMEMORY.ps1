@@ -124,7 +124,7 @@ function Main {
     }
     # Check for errors
     $errorfile = "${LogDir}\HotAddErrors.log"
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/HotAddErrors.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./HotAddErrors.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $errorsOnGuest = Get-Content -Path $errorfile
     if (-not  [string]::IsNullOrEmpty($errorsOnGuest)) {
@@ -135,7 +135,7 @@ function Main {
     # Wait for 2 minutes and check call traces
     $trace = "${LogDir}\check_traces.log"
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort ". utils.sh && UtilsInit && CheckCallTracesWithDelay 120" -runAsSudo
-    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "/home/${VMUserName}/check_traces.log" `
+    Copy-RemoteFiles -download -downloadFrom $Ipv4 -files "./check_traces.log" `
         -downloadTo $LogDir -port $VMPort -username $VMUserName -password $VMPassword
     $contents = Get-Content -Path $trace
     if ($contents -contains "ERROR") {

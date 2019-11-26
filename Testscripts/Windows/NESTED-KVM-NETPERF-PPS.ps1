@@ -12,7 +12,7 @@ function Start-TestExecution ($ip, $port, $cmd) {
 	Write-LogInfo "Executing : ${cmd}"
 	$testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
 	while ((Get-Job -Id $testJob).State -eq "Running" ) {
-		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt"
+		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat ./state.txt"
 		Write-LogInfo "Current Test Staus : $currentStatus"
 		Wait-Time -seconds 20
 	}
@@ -114,21 +114,21 @@ function Main () {
 		}
 
 		if($TestPlatform -eq "Azure") {
-			$cmd = "/home/$user/${testScript} -role server -level1ClientIP $hs2secondip -level1ServerIP $hs1secondip -level1User $user -level1Password $password -level1Port 22 -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role server -level1ClientIP $hs2secondip -level1ServerIP $hs1secondip -level1User $user -level1Password $password -level1Port 22 -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport -cmd $cmd
 
-			$cmd = "/home/$user/${testScript} -role client -level1ClientIP $hs2secondip -level1ServerIP $hs1secondip -level1User $user -level1Password $password -level1Port 22 -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role client -level1ClientIP $hs2secondip -level1ServerIP $hs1secondip -level1User $user -level1Password $password -level1Port 22 -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs2VIP -port $hs2vm1sshport -cmd $cmd
 		} else {
-			$cmd = "/home/$user/${testScript} -role server -level1ClientIP $hs2VIP -level1ClientUser $user -level1ClientPassword $password -level1ClientPort $hs2vm1sshport -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role server -level1ClientIP $hs2VIP -level1ClientUser $user -level1ClientPassword $password -level1ClientPort $hs2vm1sshport -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport -cmd $cmd
 
-			$cmd = "/home/$user/${testScript} -role client -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+			$cmd = "./${testScript} -role client -logFolder . > ./TestExecutionConsole.log"
 			Start-TestExecution -ip $hs2VIP -port $hs2vm1sshport -cmd $cmd
 		}
 
 		# Download test logs
-		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/state.txt, /home/$user/${testScript}.log, /home/$user/TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./state.txt, ./${testScript}.log, ./TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
 
 		$finalStatus = Get-Content $LogDir\state.txt
 		if ($finalStatus -imatch "TestFailed") {

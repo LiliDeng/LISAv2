@@ -25,7 +25,7 @@
     echo "TestAborted" > state.txt
     exit 0
 }
-
+homeDir=$(pwd)
 # Source constants file and initialize most common variables
 UtilsInit
 #
@@ -118,7 +118,7 @@ else
 fi
 
 LogMsg "Unmounting the floppy disk..."
-cd ~
+cd ${homeDir}
 sudo umount /mnt/floppy/
 sts=$?
 if [ $? -ne 0 ]; then

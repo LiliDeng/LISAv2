@@ -157,13 +157,13 @@ else
 fi
 
 if [[ "$SKIP_LTP_TESTS" != "" ]];then
-    echo "Skipping tests: $SKIP_LTP_TESTS" >> ~/summary.log
+    echo "Skipping tests: $SKIP_LTP_TESTS" >> ./summary.log
     echo "$SKIP_LTP_TESTS" | tr "," "\n" > SKIPFILE
     LTP_PARAMS="-S ./SKIPFILE $LTP_PARAMS"
 fi
 
 if [[ "$CUSTOM_LTP_SUITES" != "" ]];then
-    echo "Running custom suites: $CUSTOM_LTP_SUITES" >> ~/summary.log
+    echo "Running custom suites: $CUSTOM_LTP_SUITES" >> ./summary.log
     LTP_TEST_SUITE="lite"
     LTP_LITE_TESTS="$CUSTOM_LTP_SUITES"
 fi
@@ -172,25 +172,25 @@ fi
 # if the parameter is null, the test suite defaults to "lite"
 if [[ "$LTP_TEST_SUITE" == "lite" || "$LTP_TEST_SUITE" == "" ]];then
     LTP_PARAMS="-f $LTP_LITE_TESTS $LTP_PARAMS"
-    echo "Running ltp lite suite" >> ~/summary.log
+    echo "Running ltp lite suite" >> ./summary.log
 elif [[ "$LTP_TEST_SUITE" == "full" ]];then
-    echo "Running ltp full suite" >> ~/summary.log
+    echo "Running ltp full suite" >> ./summary.log
 fi
 
 # LTP can request input if missing users/groups
 # are detected, the yes command will handle the prompt.
 yes | ./runltp $LTP_PARAMS 2>/dev/null
 
-grep -A 5 "Total Tests" "$LTP_RESULTS" >> ~/summary.log
+grep -A 5 "Total Tests" "$LTP_RESULTS" >> ./summary.log
 if grep FAIL "$LTP_OUTPUT" ; then
-    echo "Failed Tests:" >> ~/summary.log
-    grep FAIL "$LTP_OUTPUT" | cut -d':' -f 2- >> ~/summary.log
+    echo "Failed Tests:" >> ./summary.log
+    grep FAIL "$LTP_OUTPUT" | cut -d':' -f 2- >> ./summary.log
 fi
 echo "-----------LTP RESULTS----------------"
-cat "$LTP_RESULTS" >> ~/TestExecution.log
+cat "$LTP_RESULTS" >> ./TestExecution.log
 echo "--------------------------------------"
 echo "-----------LTP OUTPUT----------------"
-cat "$LTP_OUTPUT" >> ~/TestExecution.log
+cat "$LTP_OUTPUT" >> ./TestExecution.log
 echo "--------------------------------------"
 collect_VM_properties
 SetTestStateCompleted

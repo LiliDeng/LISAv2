@@ -40,7 +40,7 @@ function Main {
     }
 
     # Compile gettime.c
-    $compileCmd = "gcc /home/${VMUserName}/gettime.c -o /home/${VMUserName}/gettime"
+    $compileCmd = "gcc ./gettime.c -o ./gettime"
     Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
         $VMPassword -command $compileCmd -runAsSudo
     if ($? -ne $True) {
@@ -49,7 +49,7 @@ function Main {
     }
 
     # Get time
-    $timeCmd = "time -p (/home/${VMUserName}/gettime) 2>&1 1>/dev/null"
+    $timeCmd = "time -p (./gettime) 2>&1 1>/dev/null"
     $result = Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
              $VMPassword -command $timeCmd -runAsSudo
     $result = $result.Trim()

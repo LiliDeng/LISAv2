@@ -19,7 +19,7 @@ if [ ! ${FILESYS} ]; then
     exit 1
 fi
 
-command -v mkfs.$FILESYS >> ~/summary.log
+command -v mkfs.$FILESYS >> ./summary.log
 
 if [ $? -ne 0 ]; then
     msg="Error: Tools for filesystem $FILESYS are not installed."
@@ -53,14 +53,14 @@ do
     # Delete the existing partition
     for (( c=1 ; c<=count; count--))
         do
-            (echo d; echo $c ; echo ; echo w) |  fdisk $driveName &>~/summary.log
+            (echo d; echo $c ; echo ; echo w) |  fdisk $driveName &>./summary.log
             sleep 5
         done
     
     # Partition Drive
-    (echo n; echo p; echo 1; echo ; echo +500M; echo ; echo w) | fdisk $driveName &>~/summary.log
+    (echo n; echo p; echo 1; echo ; echo +500M; echo ; echo w) | fdisk $driveName &>./summary.log
     sleep 5
-    (echo n; echo p; echo 2; echo ; echo; echo ; echo w) | fdisk $driveName &>~/summary.log
+    (echo n; echo p; echo 2; echo ; echo; echo ; echo w) | fdisk $driveName &>./summary.log
     sleep 5
     sts=$?
     if [ 0 -ne ${sts} ]; then
@@ -75,7 +75,7 @@ do
     sleep 1
 
    # Create file system on it .
-   echo "y" | mkfs.$FILESYS ${driveName}1  &>~/summary.log; echo "y" | mkfs.$FILESYS ${driveName}2 &>~/summary.log
+   echo "y" | mkfs.$FILESYS ${driveName}1  &>./summary.log; echo "y" | mkfs.$FILESYS ${driveName}2 &>./summary.log
    sts=$?
         if [ 0 -ne ${sts} ]; then
             LogErr "Error:  creating filesystem  Failed ${sts}"
@@ -99,7 +99,7 @@ do
    if [ ! -e ${MountName1} ]; then
      mkdir $MountName1
    fi
-   mount ${driveName}1 $MountName &>~/summary.log; mount ${driveName}2 $MountName1 &>~/summary.log
+   mount ${driveName}1 $MountName &>./summary.log; mount ${driveName}2 $MountName1 &>./summary.log
    sts=$?
        if [ 0 -ne ${sts} ]; then
            LogErr "Error:  mounting disk Failed ${sts}"

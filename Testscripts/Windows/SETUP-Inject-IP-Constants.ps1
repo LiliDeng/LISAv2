@@ -108,17 +108,17 @@ function Main {
             }
         }
         {($_ -eq "Internal") -or ($_ -eq "Private")} {
-            $cmd+="echo `'STATIC_IP=$($STATIC_IP)`' >> /home/$VMUserName/net_constants.sh;";
-            $cmd+="echo `'STATIC_IP2=$($STATIC_IP2)`' >> /home/$VMUserName/net_constants.sh;";
-            $cmd+="echo `'NETMASK=$($NETMASK)`' >> /home/$VMUserName/net_constants.sh;";
+            $cmd+="echo `'STATIC_IP=$($STATIC_IP)`' >> ./net_constants.sh;";
+            $cmd+="echo `'STATIC_IP2=$($STATIC_IP2)`' >> ./net_constants.sh;";
+            $cmd+="echo `'NETMASK=$($NETMASK)`' >> ./net_constants.sh;";
         }
         default {}
     }
 
-    $cmd+="echo `'PING_SUCC=$($PING_SUCC)`' >> /home/$VMUserName/net_constants.sh;";
-    $cmd+="echo `'PING_FAIL=$($PING_FAIL)`' >> /home/$VMUserName/net_constants.sh;";
-    $cmd+="echo `'PING_FAIL2=$($PING_FAIL2)`' >> /home/$VMUserName/net_constants.sh;";
-    $cmd+="echo `'ipv4=$($ipv4)`' >> /home/$VMUserName/net_constants.sh;";
+    $cmd+="echo `'PING_SUCC=$($PING_SUCC)`' >> ./net_constants.sh;";
+    $cmd+="echo `'PING_FAIL=$($PING_FAIL)`' >> ./net_constants.sh;";
+    $cmd+="echo `'PING_FAIL2=$($PING_FAIL2)`' >> ./net_constants.sh;";
+    $cmd+="echo `'ipv4=$($ipv4)`' >> ./net_constants.sh;";
 
     if ($testMAC -eq "yes") {
         # Get the MAC that was generated
@@ -134,7 +134,7 @@ function Main {
         }
 
         # Send the MAC address to the VM
-        $cmd+="echo `'MAC=$($macAddress)`' >> /home/$VMUserName/net_constants.sh;";
+        $cmd+="echo `'MAC=$($macAddress)`' >> ./net_constants.sh;";
     }
 
     Write-LogInfo "PING_SUCC=$PING_SUCC"
@@ -154,7 +154,7 @@ function Main {
 
     # If vm2name is present, set up ssh login
     if ($VM2Name) {
-        $cmd+="echo `'SSH_PRIVATE_KEY=id_rsa`' >> /home/$VMUserName/net_constants.sh;";
+        $cmd+="echo `'SSH_PRIVATE_KEY=id_rsa`' >> ./net_constants.sh;";
         $vm2ipv4 = Get-IPv4ViaKVP $VM2Name $HvServer
         # Setup ssh on VM1
         Copy-RemoteFiles -uploadTo $Ipv4 -port $VMPort -files `
@@ -164,9 +164,9 @@ function Main {
             ".\Testscripts\Linux\enablePasswordLessRoot.sh" `
             -username $VMUserName -password $VMPassword -upload
         Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "chmod +x /home/$VMUserName/*.sh" -runAsSudo
+            $VMPassword -command "chmod +x *.sh" -runAsSudo
         Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "chmod +x /home/$VMUserName/*.sh" -runAsSudo
+            $VMPassword -command "chmod +x *.sh" -runAsSudo
         $null = Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
             $VMPassword -command "./enablePasswordLessRoot.sh /home/$VMUserName ; cp -rf /root/.ssh /home/$VMUserName" -runAsSudo
         # Copy keys from VM1 and setup VM2

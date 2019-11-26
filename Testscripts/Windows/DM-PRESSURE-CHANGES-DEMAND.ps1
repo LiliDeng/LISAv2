@@ -126,7 +126,7 @@ function Main {
         Write-LogInfo "Memory stats before start-ng started reporting "
         Write-LogInfo "$vm1 assigned - $vm1BeforeAssigned | demand - $vm1BeforeDemand"
         # Send Command to consume
-        $cmdAddConstants = "echo -e `"timeoutStress=$($timeoutStress)\nmemMB=$($vm1ConsumeMem)\nduration=$($duration)\nchunk=$($chunk)`" > /home/$user/constants.sh"
+        $cmdAddConstants = "echo -e `"timeoutStress=$($timeoutStress)\nmemMB=$($vm1ConsumeMem)\nduration=$($duration)\nchunk=$($chunk)`" > ./constants.sh"
         Run-LinuxCmd -username $user -password $password -ip $Ipv4 -port $VMPort -command $cmdAddConstants -runAsSudo
         $Memcheck = "echo '${password}' | sudo -S -s eval `"export HOME=``pwd``;. utils.sh && UtilsInit && ConsumeMemory`""
         $job1=Run-LinuxCmd -username $user -password $password -ip $Ipv4 -port $VMPort -command $Memcheck -runAsSudo -RunInBackGround

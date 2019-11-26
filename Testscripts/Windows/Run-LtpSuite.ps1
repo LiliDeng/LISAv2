@@ -166,7 +166,7 @@ function Main {
                 -Username $user -password $password -ip $AllVmData.PublicIP -Port $AllVmData.SSHPort `
                 -maxRetryCount 1 -runAsSudo
 
-        $filesTocopy = "{0}/${LTP_RESULTS}, {0}/${LTP_OUPUT}, {0}/state.txt,{0}/VM_properties.csv" -f @("/home/${user}")
+        $filesTocopy = "./${LTP_RESULTS}, ./${LTP_OUPUT}, ./state.txt,./VM_properties.csv"
         Copy-RemoteFiles -download -downloadFrom $AllVmData.PublicIP -downloadTo $LogDir `
             -Port $AllVmData.SSHPort -Username $user -password $password `
             -files $filesTocopy

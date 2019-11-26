@@ -11,7 +11,7 @@ function Start-TestExecution ($ip, $port) {
     $cmd = "bash /home/$username/${testScript}"
     $testJob = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
     while ((Get-Job -Id $testJob).State -eq "Running") {
-        $currentStatus = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "cat /home/$username/state.txt"  -runAsSudo
+        $currentStatus = Run-LinuxCmd -username $username -password $password -ip $ip -port $port -command "cat ./state.txt"  -runAsSudo
         Write-LogInfo "Current test status : $currentStatus"
         Wait-Time -seconds 30
     }

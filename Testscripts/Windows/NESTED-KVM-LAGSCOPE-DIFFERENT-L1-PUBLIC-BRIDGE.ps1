@@ -8,7 +8,7 @@ function Start-TestExecution ($ip, $port, $cmd) {
 	Write-LogInfo "Executing : ${cmd}"
 	$testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
 	while ((Get-Job -Id $testJob).State -eq "Running" ) {
-		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt"
+		$currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat ./state.txt"
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
@@ -122,18 +122,18 @@ function Main () {
 			}
 		}
 
-		$cmd = "/home/$user/${testScript} -role server -level1ClientIP $hs2VIP -level1User $user -level1Password $password -level1Port $hs2vm1sshport -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+		$cmd = "./${testScript} -role server -level1ClientIP $hs2VIP -level1User $user -level1Password $password -level1Port $hs2vm1sshport -logFolder . > ./TestExecutionConsole.log"
 		Start-TestExecution -ip $hs1VIP -port $hs1vm1sshport -cmd $cmd
 
-		$cmd = "/home/$user/${testScript} -role client -logFolder /home/$user > /home/$user/TestExecutionConsole.log"
+		$cmd = "./${testScript} -role client -logFolder . > ./TestExecutionConsole.log"
 		Start-TestExecution -ip $hs2VIP -port $hs2vm1sshport -cmd $cmd
 
 		# Download test logs
-		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "/home/$user/state.txt, /home/$user/${testScript}.log, /home/$user/TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
+		Copy-RemoteFiles -download -downloadFrom $hs2VIP -files "./state.txt, ./${testScript}.log, ./TestExecutionConsole.log" -downloadTo $LogDir -port $hs2vm1sshport -username $user -password $password
 		$finalStatus = Get-Content $LogDir\state.txt
 
 		Run-LinuxCmd -username $user -password $password -ip $hs2VIP -port $hs2vm1sshport -command ". utils.sh && collect_VM_properties" -runAsSudo
-		Copy-RemoteFiles -downloadFrom $hs2VIP -port $hs2vm1sshport -username $user -password $password -download -downloadTo $LogDir -files "/home/$user/lagscope-n$pingIteration-output.txt,/home/$user/nested_properties.csv,/home/$user/VM_properties.csv"
+		Copy-RemoteFiles -downloadFrom $hs2VIP -port $hs2vm1sshport -username $user -password $password -download -downloadTo $LogDir -files "./lagscope-n$pingIteration-output.txt,./nested_properties.csv,./VM_properties.csv"
 
 		$testSummary = $null
 		$lagscopeReportLog = Get-Content -Path "$LogDir\lagscope-n$pingIteration-output.txt"

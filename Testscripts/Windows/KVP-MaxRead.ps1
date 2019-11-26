@@ -17,7 +17,7 @@ function Add-KVPEntries {
     #!/bin/bash
     ps aux | grep "[k]vp"
     if [ `$? -ne 0 ]; then
-      echo "KVP is disabled" >> /home/$user/KVP.log 2>&1
+      echo "KVP is disabled" >> ./KVP.log 2>&1
       exit 1
     fi
 
@@ -34,7 +34,7 @@ function Add-KVPEntries {
             echo "32 bit architecture was detected"
             kvp_client="kvp_client32"
         else
-            echo "Error: Unable to detect OS architecture" >> /home/$user/KVP.log 2>&1
+            echo "Error: Unable to detect OS architecture" >> ./KVP.log 2>&1
             exit 60
         fi
     fi
@@ -48,13 +48,13 @@ function Add-KVPEntries {
     done
 
     if [ `$? -ne 0 ]; then
-        echo "Failed to append new entries" >> /home/$user/KVP.log 2>&1
+        echo "Failed to append new entries" >> ./KVP.log 2>&1
         exit 100
     fi
 
     ps aux | grep "[k]vp"
     if [ `$? -ne 0 ]; then
-        echo "KVP daemon failed after append" >> /home/$user/KVP.log 2>&1
+        echo "KVP daemon failed after append" >> ./KVP.log 2>&1
         exit 100
     fi
 
@@ -68,7 +68,7 @@ function Add-KVPEntries {
     # Send file
     Copy-RemoteFiles -uploadTo $VmIp -port $VMPort -files $filename -username $User -password $Password -upload
     $retVal = Run-LinuxCmd -username $User -password $Password -ip $VmIp -port $VMPort -command  `
-        "cd /home/${User} && chmod +x kvp_client* && chmod u+x ${filename} && ./${filename}" `
+        "chmod +x kvp_client* && chmod u+x ${filename} && ./${filename}" `
         -runAsSudo
 
     return $retVal
