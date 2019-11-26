@@ -3681,6 +3681,11 @@ function install_gpu_requirements() {
 			LogMsg "installed build-essential libelf-dev linux-tools linux-cloud-tools python libglvnd-dev ubuntu-desktop"
 		;;
 
+		debian*)
+			apt -y install linux-headers-$(uname -r)
+			LogMsg "installed linux-headers-$(uname -r)"
+		;;
+
 		suse_15*)
 			kernel=$(uname -r)
 			if [[ "${kernel}" == *azure ]];
@@ -3694,4 +3699,27 @@ function install_gpu_requirements() {
 			fi
 		;;
 	esac
+}
+
+function install_common_tools() {
+	lsvmbus_path=$(which lsvmbus)
+	if [[ -z "$lsvmbus_path" ]] || ! $lsvmbus_path > /dev/null 2>&1; then
+		install_package wget
+		wget https://raw.githubusercontent.com/torvalds/linux/master/tools/hv/lsvmbus
+		chmod +x lsvmbus
+		if [[ "$DISTRO" =~ "coreos" ]]; then
+			export PATH=$PATH:/usr/share/oem/python/bin/
+			lsvmbus_path="./lsvmbus"
+		else
+			mv lsvmbus /usr/sbin
+			lsvmbus_path=$(which lsvmbus)
+		fi
+	fi
+
+	if [ -z "$lsvmbus_path" ]; then
+		LogErr "lsvmbus tool not found!"
+	fi
+
+	which lspci || install_package pciutils
+	which ethtool || install_package ethtool
 }

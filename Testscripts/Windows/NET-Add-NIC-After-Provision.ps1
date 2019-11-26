@@ -89,8 +89,17 @@ function Main {
 			if ($ipCount -eq 1) {
 				Write-LogInfo "Extra NIC #${nicNr} is correctly configured!"
 			} else {
-				Write-LogErr "Extra NIC #${nicNr} didn't get the expected IP ${ipAddr}"
-				return "FAIL"
+				Write-LogInfo "Run dhclient command since extra NIC #${nicNr} doesn't have IP."
+				Run-LinuxCmd -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -username $user -password `
+					$password -command "dhclient" -ignoreLinuxExitCode:$true  -runAsSudo | Out-Null
+				$ipCount = Run-LinuxCmd -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -username $user -password `
+					$password -command "export PATH=`$PATH:/usr/sbin ; ip a | grep -c $ipAddr" -ignoreLinuxExitCode:$true
+				if ($ipCount -ne 1) {
+					Write-LogErr "Extra NIC #${nicNr} didn't get the expected IP ${ipAddr}"
+					return "FAIL"
+				} else {
+					Write-LogInfo "Extra NIC #${nicNr} is correctly configured after run dhclient!"
+				}
 			}
 		}
 		$testResult = "PASS"

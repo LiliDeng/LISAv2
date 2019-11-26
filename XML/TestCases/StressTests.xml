@@ -30,7 +30,7 @@
 		<Tags>stress,boot,network,sriov</Tags>
 		<Priority>2</Priority>
 	</test>
-		<test>
+	<test>
 		<testName>STRESSTEST-RELOAD-LIS-MODULES</testName>
 		<testScript>RELOAD-MODULES.ps1</testScript>
 		<files>.\TestScripts\Linux\RELOAD-MODULES.sh,.\TestScripts\Linux\utils.sh</files>

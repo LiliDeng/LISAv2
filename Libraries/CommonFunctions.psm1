@@ -769,9 +769,6 @@ function Verify-MellanoxAdapter($vmData)
 	$mellanoxAdapterDetected = $false
 	while ( !$mellanoxAdapterDetected -and ($retryAttempts -lt $maxRetryAttemps))
 	{
-		Write-LogInfo "Install package pciutils to use lspci command."
-		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -file ".\Testscripts\Linux\utils.sh" -upload
-		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "which lspci || (. ./utils.sh && install_package pciutils)" -runAsSudo | Out-Null
 		$pciDevices = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "lspci" -runAsSudo
 		if ( $pciDevices -imatch "Mellanox")
 		{
@@ -965,6 +962,14 @@ Function Set-CustomConfigInVMs($CustomKernel, $CustomLIS, $EnableSRIOV, $AllVMDa
 		} else {
 			Write-LogErr "Custom LIS: $CustomLIS installation stopped because UNSUPPORTED distro - $global:detectedDistro"
 			$retValue = $false
+		}
+	}
+	if ($retValue) {
+		# Install common tools.
+		foreach ($vmData in $AllVMData) {
+			Write-LogInfo "Install common tools."
+			Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -file ".\Testscripts\Linux\utils.sh" -upload
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command ". ./utils.sh && install_common_tools" -runAsSudo | Out-Null
 		}
 	}
 	if ($retValue -and $EnableSRIOV) {
