@@ -51,8 +51,9 @@ function build_test_dpdk_primary_secondary () {
 	"${RTE_SDK}/${EXAMPLES_DIR}/mp_server/${RTE_TARGET}/mp_server" -l0-1 -n4 $whitelist_params -- -p 0x14 -n2 1>/dev/null 2>/dev/null &
 	sleep 10
 	log_file="./primary_secondary.log"
+	echo "timeout --preserve-status 15 ${RTE_SDK}/${EXAMPLES_DIR}/mp_client/${RTE_TARGET}/mp_client -l3 -n4 --proc-type=auto $whitelist_params -- -n 0" >>  $log_file
 	timeout --preserve-status 15 "${RTE_SDK}/${EXAMPLES_DIR}/mp_client/${RTE_TARGET}/mp_client" -l3 \
-		-n4 --proc-type=auto $whitelist_params -- -n 0 2>&1 > $log_file
+		-n4 --proc-type=auto $whitelist_params -- -n 0 2>&1 >> $log_file
 
 	test_output=$(cat $log_file)
 	if [[ "${test_output}" == *"Failed"* ]]; then
