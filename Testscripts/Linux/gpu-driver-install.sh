@@ -89,7 +89,7 @@ function InstallCUDADrivers() {
             LogMsg "Successfully installed cuda-drivers package"
         fi
     ;;
-    suse*|redhat_8)
+    suse*|redhat_8|debian*)
         LogMsg "$DISTRO not supported. Skip the test."
         SetTestStateSkipped
         exit 0
