@@ -91,6 +91,7 @@ function Install_Build_Deps {
         ;;
 
     ubuntu*|debian*)
+        dpkg_configure
         CheckInstallLockUbuntu
         LogMsg "Installing package git build-essential bison flex libelf-dev libncurses5-dev xz-utils libssl-dev bc ccache"
         apt_get_install "git build-essential bison flex libelf-dev libncurses5-dev xz-utils libssl-dev bc ccache"  >> $LOG_FILE 2>&1
