@@ -26,7 +26,6 @@ UtilsInit
 
 function build_test_dpdk_primary_secondary () {
 	SetTestStateRunning
-	trap "echo TestAborted > state.txt; exit 0" TERM
 	LogMsg "Configuring ${1} ${DISTRO_NAME} ${DISTRO_VERSION} for primary/secondary test..."
 
 	ssh "${1}" "cd ${RTE_SDK} && RTE_SDK=${RTE_SDK} RTE_TARGET=${RTE_TARGET} make -C ${EXAMPLES_DIR_ROOT}"
@@ -60,8 +59,6 @@ function build_test_dpdk_primary_secondary () {
 		LogErr "Test output failure: $test_output"
 		SetTestStateFailed
 	fi
-	pkill dpdk
-
 	LogMsg "Built and ran tests for primary/secondary on ${1} with output: $test_output"
 }
 
