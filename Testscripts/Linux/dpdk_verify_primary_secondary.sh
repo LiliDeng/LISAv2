@@ -60,7 +60,7 @@ function build_test_dpdk_primary_secondary () {
 		LogErr "Test output failure: $test_output"
 		SetTestStateFailed
 	fi
-	pkill -f dpdk
+	pkill dpdk
 
 	LogMsg "Built and ran tests for primary/secondary on ${1} with output: $test_output"
 }
