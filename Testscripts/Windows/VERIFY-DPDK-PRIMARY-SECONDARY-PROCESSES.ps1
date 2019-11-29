@@ -127,17 +127,10 @@ collect_VM_properties
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
 			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
-		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkPrimarySecondaryVerify.sh" -RunInBackground
+		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
+			-username $superUser -password $password -command "./StartDpdkPrimarySecondaryVerify.sh" | Out-Null
 		#endregion
 
-		#region MONITOR INSTALL CONFIGURE DPDK PRIMARY/SECONDARY
-		while ((Get-Job -Id $testJob).State -eq "Running") {
-			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkVerifyPrimarySecondaryLogs.txt | head -1"
-			Write-LogInfo "Current Test Status : $currentStatus"
-			Wait-Time -seconds 20
-		}
 		$dpdkStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
 			-username $superUser -password $password -command "cat /root/state.txt"
 		$testResult = Get-TestStatus $dpdkStatus
