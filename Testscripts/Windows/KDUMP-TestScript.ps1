@@ -112,20 +112,40 @@ function Main {
     } elseif ($state -eq "TestSkipped") {
         return "SKIPPED"
     }
-    # Rebooting the VM in order to apply the kdump settings
-    Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-        -command "reboot" -runAsSudo -RunInBackGround | Out-Null
-    Write-LogInfo "Rebooting VM $VMName after kdump configuration..."
-    Start-Sleep -Seconds 10 # Wait for kvp & ssh services stop
 
-    # Wait for VM boot up and update ip address
-    Wait-ForVMToStartSSH -Ipv4addr $Ipv4 -StepTimeout 360 | Out-Null
+    # Check memory reservation successfully before next step
+    $retryTimes = 3
+    DO {
+        Write-LogInfo "Attempt $(4 - $retryTimes) to check memory reservation successfully."
+        # Rebooting the VM in order to apply the kdump settings
+        Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
+            -command "sleep 5; reboot" -runAsSudo -RunInBackGround | Out-Null
+        Write-LogInfo "Rebooting VM $VMName after kdump configuration..."
+        Start-Sleep -Seconds 10 # Wait for kvp & ssh services stop
+        # Wait for VM boot up and update ip address
+        Wait-ForVMToStartSSH -Ipv4addr $Ipv4 -StepTimeout 360 | Out-Null
+        $retCount = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
+            -command "dmesg | grep -ic 'crashkernel reservation failed - No suitable area found'" `
+            -ignoreLinuxExitCode:$true -runAsSudo
+        if (1 -eq $retCount) {
+            Write-LogWarn "Memory reservation failed, retry ..."
+            $retryTimes -= 1
+            continue
+        } else{
+            Write-LogInfo "Memory reservation successfully..."
+            break
+        }
+    } while ($retryTimes -gt 0)
 
+    if ((0 -eq $retryTimes) -and (1 -eq $retCount)) {
+        Write-LogErr "Memory reservation failed after retry 3 times."
+        return "FAIL"
+    }
     # Prepare the kdump related
     $retVal = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
                 -command "export HOME=``pwd``;chmod u+x KDUMP-Execute.sh && ./KDUMP-Execute.sh" -runAsSudo
     $state = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-        -command "cat state.txt" -runAsSudo
+                -command "cat state.txt" -runAsSudo
     if (($state -eq "TestAborted") -or ($state -eq "TestFailed")) {
         Write-LogErr "Running KDUMP-Execute.sh script failed on VM!"
         return "ABORTED"
@@ -145,13 +165,13 @@ function Main {
         } else {
             # If directly use plink to trigger kdump, command fails to exit, so use start-process
             Run-LinuxCmd -username  $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
+                -command "sleep 5; echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
         }
     }
 
     # Give the host a few seconds to record the event
     Write-LogInfo "Waiting seconds to record the event..."
-    Start-Sleep -Seconds 10
+    Start-Sleep -Seconds 30
 
     if ($TestPlatform -eq "HyperV") {
         if ((-not $RHEL7_Above) -and ($BuildNumber -eq "14393")){
@@ -176,10 +196,26 @@ function Main {
         }
         return "FAIL"
     }
+    $state = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
+        -command "cat state.txt" -runAsSudo
+    if (($state -eq "TestAborted") -or ($state -eq "TestFailed")) {
+        Write-LogErr "Running KDUMP-Results.sh script failed on VM!"
+        return "ABORTED"
+    }
+    if ($useNFS -eq "yes") {
+       $cmd = "find /mnt/* -type f -size +10M"
+    } else {
+       $cmd = "find /var/crash/* -type f -size +10M"
+    }
     $result = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "find /var/crash/ -name vmcore -type f -size +10M" -runAsSudo
-    Write-LogInfo "Files found: $result"
-    Write-LogInfo "Test passed: crash file $result is present"
+                -command $cmd -runAsSudo
+    if ($result) {
+        Write-LogInfo "Files found: $result"
+        Write-LogInfo "Test passed: crash file $result is present"
+    } else {
+        Write-LogErr "Not found core file after generate a kernel panic."
+        return "FAIL"
+    }
 
     # Stop NFS server VM
     if ($vm2Name) {
