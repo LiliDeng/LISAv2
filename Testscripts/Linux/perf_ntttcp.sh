@@ -319,7 +319,7 @@ Run_Ntttcp()
 		Kill_Process "${server}" mpstat
 		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "./$log_folder/mpstat-${rx_log_prefix}" &
 
-		sleep 2
+		sleep 10
 		IFS=',' read -r -a array <<< "${client}"
 		for ip in "${array[@]}"
 		do
@@ -422,7 +422,7 @@ Run_Ntttcp()
 		fi
 		LogMsg "current test finished. wait for next one... "
 		i=$(($i + 1))
-		sleep 5
+		sleep 10
 	done
 }
 
