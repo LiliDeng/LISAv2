@@ -54,7 +54,7 @@ function Verify_Result {
 
 function Main() {
 	LogMsg "Starting RDMA required packages and software setup in VM"
-	#update_repos
+	update_repos
 	# Install common packages
 	install_package "gcc git make zip"
 	LogMsg "Installed the common required packages, gcc git make zip"
