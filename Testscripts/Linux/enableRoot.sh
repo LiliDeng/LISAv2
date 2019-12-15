@@ -41,6 +41,9 @@ if [ $? == 0 ]; then
             echo 'PermitRootLogin yes' >> $sshd_configFilePath
             systemctl daemon-reload
         fi
+        echo "TcpKeepAlive yes" >> /root/.ssh/config
+        echo "ServerAliveInterval 1200" >> /root/.ssh/config
+        echo "ServerAliveCountMax 1000" >> /root/.ssh/config
         service $sshdServiceName restart || systemctl restart sshd.service
         sshdServiceStatus=$?
         if [ $sshdServiceStatus != 0 ]; then
