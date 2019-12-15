@@ -54,7 +54,7 @@ function Verify_Result {
 
 function Main() {
 	LogMsg "Starting RDMA required packages and software setup in VM"
-	update_repos
+	#update_repos
 	# Install common packages
 	install_package "gcc git make zip"
 	LogMsg "Installed the common required packages, gcc git make zip"
@@ -230,8 +230,8 @@ function Main() {
 			LogMsg "*** Adding Canonical ppa for temporary fix"
 			add-apt-repository -y ppa:ci-train-ppa-service/3760
 			LogMsg "*** System updating with the customized ppa"
-			apt update
-			apt upgrade -y
+			#apt update
+			#apt upgrade -y
 			Verify_Result
 			;;
 		*)
