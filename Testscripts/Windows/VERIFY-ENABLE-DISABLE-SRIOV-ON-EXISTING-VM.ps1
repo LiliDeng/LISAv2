@@ -8,23 +8,22 @@ Function Run-CurrentTest ( [switch]$Enable, [switch]$Disable, [object]$CurrentTe
         $SRIOVChangeState = Set-SRIOVInVMs -AllVMData $AllVMData -Enable
         $ExpectedNics = 1
         $DesiredState = "Enable"
-    }
-    elseif ($Disable) {
+    } elseif ($Disable) {
         $SRIOVChangeState = Set-SRIOVInVMs -AllVMData $AllVMData -Disable
         $ExpectedNics = 0
         $DesiredState = "Disable"
     }
     if ($SRIOVChangeState) {
+        Install-Packages $AllVmData "pciutils"
         $IsSriovVerified = Test-SRIOVInLinuxGuest -username "$user" -password $password `
             -IpAddress $AllVMData.PublicIP -SSHPort $AllVMData.SSHPort -ExpectedSriovNics $ExpectedNics
-        if ( $IsSriovVerified ) {
+        if ($IsSriovVerified) {
             Write-LogInfo "$DesiredState Accelerated networking : verified successfully."
             $StageResult = $true
             $resultArr += "PASS"
             $CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" -metaData "$DesiredState`SRIOV : Test Iteration - $TestIteration" `
                 -checkValues "PASS,FAIL,ABORTED" -testName $currentTestData.testName
-        }
-        else {
+        } else {
             Write-LogInfo "$DesiredState Accelerated networking : Failed."
             $StageResult = $false
             $resultArr += "FAIL"
@@ -32,8 +31,7 @@ Function Run-CurrentTest ( [switch]$Enable, [switch]$Disable, [object]$CurrentTe
                 -checkValues "PASS,FAIL,ABORTED" -testName $currentTestData.testName
             $FailureCount += 1
         }
-    }
-    else {
+    } else {
         Write-LogInfo "Test Accelerated networking : Failed."
         $resultArr += "FAIL"
         $CurrentTestResult.TestSummary += New-ResultSummary -testResult "FAIL" -metaData "$DesiredState`SRIOV : Test Iteration - $TestIteration" `
@@ -52,13 +50,12 @@ function Main {
         $Stage2Result = $true
         $FailureCount = 0
         #Enable SRIOV
-        for ($TestIteration = 1 ; $TestIteration -le [int]$CurrentTestData.TestIterations; $TestIteration ++ ) {
+        for ($TestIteration = 1 ; $TestIteration -le [int]$CurrentTestData.TestIterations; $TestIteration ++) {
             if ($Stage2Result) {
                 Write-LogInfo "[Iteration : $TestIteration/$($CurrentTestData.TestIterations)] Stage 1: Enable SRIOV on Non-SRIOV Azure VM."
                 $Stage1Result = $false
                 $Stage1Result = Run-CurrentTest -Enable -CurrentTestResult $currentTestResult -AllVmData $AllVmData
-            }
-            else {
+            } else {
                 #Break the for loop.
                 $resultArr += "FAIL"
                 $FailureCount += 1
@@ -69,8 +66,7 @@ function Main {
                 Write-LogInfo "[Iteration : $TestIteration/$($CurrentTestData.TestIterations)] Stage 2: Disable SRIOV on SRIOV Azure VM."
                 $Stage2Result = $false
                 $Stage2Result = Run-CurrentTest -Disable -CurrentTestResult $currentTestResult -AllVmData $AllVmData
-            }
-            else {
+            } else {
                 #Break the for loop.
                 $resultArr += "FAIL"
                 $FailureCount += 1
@@ -80,21 +76,18 @@ function Main {
 
         if ($FailureCount -eq 0) {
             $testResult = "PASS"
-        }
-        else {
+        } else {
             $testResult = "FAIL"
         }
 
         Write-LogInfo "Test Completed."
         Write-LogInfo "Test Result: $testResult"
 
-    }
-    catch {
+    } catch {
         $ErrorMessage = $_.Exception.Message
         $ErrorLine = $_.InvocationInfo.ScriptLineNumber
         Write-LogErr "EXCEPTION : $ErrorMessage at line: $ErrorLine"
-    }
-    Finally {
+    } Finally {
         if (!$testResult) {
             $testResult = "ABORTED"
         }

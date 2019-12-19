@@ -762,6 +762,15 @@ function Install-CustomLIS ($CustomLIS, $customLISBranch, $allVMData, [switch]$R
 	}
 }
 
+function Install-Packages ($AllVMData, $packages) {
+	$packages = $packages.Trim()
+	foreach ($vmData in $AllVMData) {
+		Write-LogInfo "Install package(s) $packages on $($vmData.PublicIP)."
+		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -file ".\Testscripts\Linux\utils.sh" -upload
+		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command ". ./utils.sh && install_package '$packages'" -runAsSudo | Out-Null
+	}
+}
+
 function Verify-MellanoxAdapter($vmData)
 {
 	$maxRetryAttemps = 50
@@ -769,9 +778,6 @@ function Verify-MellanoxAdapter($vmData)
 	$mellanoxAdapterDetected = $false
 	while ( !$mellanoxAdapterDetected -and ($retryAttempts -lt $maxRetryAttemps))
 	{
-		Write-LogInfo "Install package pciutils to use lspci command."
-		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -file ".\Testscripts\Linux\utils.sh" -upload
-		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "which lspci || (. ./utils.sh && install_package pciutils)" -runAsSudo | Out-Null
 		$pciDevices = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "lspci" -runAsSudo
 		if ( $pciDevices -imatch "Mellanox")
 		{
@@ -794,7 +800,7 @@ function Enable-SRIOVInAllVMs($allVMData, $TestProvider)
 		$scriptName = "ConfigureSRIOV.sh"
 		$sriovDetectedCount = 0
 		$vmCount = 0
-
+		Install-Packages $allVMData "pciutils"
 		foreach ( $vmData in $allVMData )
 		{
 			$vmCount += 1

@@ -65,7 +65,8 @@ function Start-Validation {
     if ( $lspci ) {
         Write-Debug "Successfully fetched the lspci command result"
     } else {
-        Write-Error "Failed to fetch the lspci command result"
+        Write-Debug "Failed to fetch the lspci command result, install it"
+        Install-Packages $allVMData "pciutils"
     }
     Set-Content -Value $lspci -Path $LogDir\lspci.txt -Force
     $lspciCount = (Select-String -Path $LogDir\lspci.txt -Pattern "NVIDIA Corporation").Matches.Count

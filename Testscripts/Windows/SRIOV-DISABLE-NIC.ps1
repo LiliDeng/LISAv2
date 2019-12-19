@@ -23,6 +23,7 @@ function Main {
         $VMPort,
         $VMPassword
     )
+    Install-Packages $AllVMData "pciutils"
     $moduleCheckCMD = "lspci -vvv | grep -c 'mlx[4-5]_core\|mlx4_en\|ixgbevf'"
     $vfCheckCMD = "find /sys/devices -name net -a -ipath '*vmbus*' | grep -c pci"
     try {
