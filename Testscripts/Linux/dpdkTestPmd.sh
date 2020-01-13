@@ -80,7 +80,7 @@ runTestPmd()
 	echo 4096 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages \
 		&& echo 1 > /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages \
 		&&  modprobe -a ib_uverbs mlx4_en mlx4_core mlx4_ib; \
-		timeout --kill-after 10 10 testpmd --no-pci -m 1024 -c 0x3 -- -i --total-num-mbufs=16384 --coremask=0x2 --rxq=1 --txq=1
+		timeout --kill-after 10 10 /usr/local/bin/testpmd --no-pci -m 1024 -c 0x3 -- -i --total-num-mbufs=16384 --coremask=0x2 --rxq=1 --txq=1
 
 	for testmode in $modes; do
 		LogMsg "TestPmd is starting on ${serverNIC1ip} with ${testmode} mode, duration ${testDuration} secs"
@@ -100,7 +100,7 @@ runTestPmd()
 		echo 4096 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages \
 			&& echo 1 > /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages \
 			&& modprobe -a ib_uverbs mlx4_en mlx4_core mlx4_ib
-		timeout "${testDuration}" testpmd -l 0-1 -w 0002:00:02.0 --vdev='net_vdev_netvsc0,iface=eth1,force=1' -- \
+		timeout "${testDuration}" /usr/local/bin/testpmd -l 0-1 -w 0002:00:02.0 --vdev='net_vdev_netvsc0,iface=eth1,force=1' -- \
 			--port-topology=chained --nb-cores 1 --txq 1 --rxq 1 --mbcache=512 --txd=4096 --rxd=4096 \
 			--forward-mode=txonly --stats-period 1 "${trx_rx_ips}" 2>&1 > "$LOGDIR"/dpdk-testpmd-"${testmode}"-sender-$(date +"%m%d%Y-%H%M%S").log &
 		checkCmdExitStatus "TestPmd started on ${clientNIC1ip} with txonly mode, duration ${testDuration} secs"
@@ -122,7 +122,7 @@ testPmdParser ()
 	LogMsg "*********INFO: Parser Started*********"
 	testpmdCsvFile=$HOMEDIR/dpdkTestPmd.csv
 	mv "$HOMEDIR"/dpdkTestPmd.csv "$HOMEDIR"/dpdkTestPmd-$(date +"%m%d%Y-%H%M%S").csv
-	DpdkVersion=$(testpmd -v 2>&1 | grep DPDK | tr ":" "\n" | sed 's/^ //g' | sed "s/'//g" | tail -1)
+	DpdkVersion=$(/usr/local/bin/testpmd -v 2>&1 | grep DPDK | tr ":" "\n" | sed 's/^ //g' | sed "s/'//g" | tail -1)
 	logFiles=($(ls "$LOGDIR"/*.log))
 	echo "DpdkVersion,TestMode,Cores,MaxRxPps,TxPps,RxPps,FwdPps,TxBytes,RxBytes,FwdBytes,TxPackets,RxPackets,FwdPackets,TxPacketSize,RxPacketSize" > "$testpmdCsvFile"
 	fileCount=0

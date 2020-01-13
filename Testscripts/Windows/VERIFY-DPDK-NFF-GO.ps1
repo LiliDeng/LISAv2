@@ -5,7 +5,7 @@ param([object] $AllVmData,
 
 function Main {
 	# Create test result
-	$superUser = "root"
+	$superUser = $user
 	$testResult = $null
 
 	try {
@@ -36,7 +36,6 @@ function Main {
 
 		#region INSTALL CONFIGURE DPDK
 		$install_configure_dpdk = @"
-cd /root/
 ./dpdkSetup.sh > dpdkConsoleLogs.txt 2>&1
 . utils.sh
 collect_VM_properties
@@ -46,20 +45,20 @@ collect_VM_properties
 			-files "$constantsFile,$LogDir\StartDpdkNffGoSetup.sh" -username $superUser -password $password -upload
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+			-username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo | Out-Null
 		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkNffGoSetup.sh" -RunInBackground
+			-username $superUser -password $password -command "bash StartDpdkNffGoSetup.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 		if ($testResult -ne "PASS") {
 			Copy-RemoteFiles -downloadFrom $vmData.PublicIP -port $vmData.SSHPort `
@@ -69,7 +68,6 @@ collect_VM_properties
 
 		#region INSTALL CONFIGURE NFF-GO
 		$build_test_nff_go = @"
-cd /root/
 ./build_test_nff_go.sh > nffGoConsoleLogs.txt 2>&1
 . utils.sh
 collect_VM_properties
@@ -79,20 +77,20 @@ collect_VM_properties
 			-files "$LogDir\StartNffGoSetup.sh" -username $superUser -password $password -upload
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+			-username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo | Out-Null
 		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartNffGoSetup.sh" -RunInBackground
+			-username $superUser -password $password -command "bash StartNffGoSetup.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE NFF-GO
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 nffGoConsoleLogs.txt | head -1"
+				-username $superUser -password $password -command "tail -2 nffGoConsoleLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$ovsStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		$testResult = Get-TestStatus $ovsStatus
 
 		Copy-RemoteFiles -downloadFrom $vmData.PublicIP -port $vmData.SSHPort `

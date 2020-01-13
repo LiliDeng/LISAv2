@@ -4,15 +4,17 @@ param([object] $AllVmData,
 	  [object] $CurrentTestData)
 
 function Invoke-DpdkTestPmd {
-	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "./StartDpdkTestPmd.sh" -RunInBackground
+	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "bash StartDpdkTestPmd.sh" -RunInBackground -runAsSudo
 
 	#region MONITOR TEST
 	while ((Get-Job -Id $testJob).State -eq "Running") {
-		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
-	$finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "cat /root/state.txt"
+	$finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "cat /root/state.txt" -runAsSudo
+	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown -R ${user}:${user} /root/" -runAsSudo | out-null
+	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 	Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -download -downloadTo $currentDir -files "*.csv, *.txt, *.log"
 
 	if ($finalStatus -imatch "TestFailed") {
@@ -42,7 +44,7 @@ function Invoke-DpdkTestPmd {
 }
 function Main {
 	# Create test result
-	$superUser = "root"
+	$superUser = $user
 	$resultArr = @()
 	$lowerbound = 1000000
 	$currentTestResult = Create-TestResultObject
@@ -85,8 +87,8 @@ function Main {
 
 		Write-LogInfo "Getting Active NIC Name."
 		$getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
-		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
-		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
+		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command $getNicCmd -runAsSudo).Trim()
+		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $superUser -password $password -command $getNicCmd -runAsSudo).Trim()
 		if ($serverNicName -eq $clientNicName) {
 			Write-LogInfo "Client and Server VMs have same nic name: $clientNicName"
 		} else {
@@ -131,6 +133,7 @@ function Main {
 
 		#region EXECUTE TEST
 		$myString = @"
+cp * /root/
 cd /root/
 ./dpdkTestPmd.sh 2>&1 > dpdkConsoleLogs.txt
 . utils.sh
@@ -138,7 +141,9 @@ collect_VM_properties
 "@
 		Set-Content "$LogDir\StartDpdkTestPmd.sh" $myString
 		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\StartDpdkTestPmd.sh" -username $superUser -password $password -upload
-		$null = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo
+		}
 
 		$currentDir = "$LogDir\initialSRIOVTest"
 		New-Item -Path $currentDir -ItemType Directory | Out-Null

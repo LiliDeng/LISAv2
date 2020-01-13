@@ -3,7 +3,7 @@
 param([object] $AllVmData,
 	[object] $CurrentTestData)
 
-$SUPER_USER = "root"
+$SUPER_USER = "lisa"
 
 function Check-DPDKCompliance {
 	Write-LogInfo "DPDK VM details:"
@@ -35,7 +35,6 @@ function Check-DPDKCompliance {
 	Write-LogInfo (Get-Content -Path $constantsFile)
 
 	$installDPDKCommand = @"
-cd /root/
 ./dpdkSetup.sh 2>&1 > dpdkConsoleLogs.txt
 . utils.sh
 collect_VM_properties
@@ -46,20 +45,20 @@ collect_VM_properties
 		-username $SUPER_USER -password $password -upload
 
 	Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "chmod +x *.sh" | Out-Null
+		-username $SUPER_USER -password $password -command "chmod +x *.sh;cp * /root/"  -runAsSudo | Out-Null
 	$testJob = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "./StartDpdkSetup.sh" `
-		-RunInBackground
+		-username $SUPER_USER -password $password -command "bash StartDpdkSetup.sh" `
+		-RunInBackground -runAsSudo
 
 	while ((Get-Job -Id $testJob).State -eq "Running") {
 		$currentStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-			-username $SUPER_USER -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+			-username $SUPER_USER -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1" -runAsSudo
 		Write-LogInfo "Current Test Status: $currentStatus"
 		Wait-Time -seconds 20
 	}
 
 	$finalStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "cat /root/state.txt"
+		-username $SUPER_USER -password $password -command "cat state.txt" -runAsSudo
 	Copy-RemoteFiles -downloadFrom $allVMData.PublicIP -port $allVMData.SSHPort `
 		-username $SUPER_USER -password $password -download `
 		-downloadTo $LogDir -files "*.csv, *.txt, *.log"

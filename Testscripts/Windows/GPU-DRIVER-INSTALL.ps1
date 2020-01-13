@@ -28,8 +28,8 @@ param([object] $AllVmData,
 function Start-Validation {
     # region PCI Express pass-through in lsvmbus
     $PCIExpress = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-        -username $superuser -password $password "lsvmbus -vv" -ignoreLinuxExitCode
-    if ( $PCIExpress ) {
+        -username $user -password $password "lsvmbus -vv" -runAsSudo -ignoreLinuxExitCode
+    if ($PCIExpress) {
         Write-Debug "Successfully fetched the PCIExpress result from lsvmbus"
     } else {
         Write-Error "Could not succeed to fetch out PCIExpress result from lsvmbus"
@@ -60,7 +60,7 @@ function Start-Validation {
 
     #region lspci
     $lspci = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-        -username $superuser -password $password "lspci" -ignoreLinuxExitCode
+        -username $user -password $password "lspci" -runAsSudo -ignoreLinuxExitCode
 
     if ( $lspci ) {
         Write-Debug "Successfully fetched the lspci command result"
@@ -85,8 +85,8 @@ function Start-Validation {
 
     #region lshw -c video
     $lshw = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-        -username $superuser -password $password "lshw -c video" -ignoreLinuxExitCode
-    if ( $lshw ) {
+        -username $user -password $password "lshw -c video" -ignoreLinuxExitCode -runAsSudo
+    if ($lshw) {
         Write-Debug "Successfully fetch the lshw command result"
     } else {
         Write-Error "Failed to fetch the lshw command result"
@@ -109,7 +109,7 @@ function Start-Validation {
 
     #region nvidia-smi
     $nvidiasmi = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-        -username $superuser -password $password "nvidia-smi" -ignoreLinuxExitCode
+        -username $user -password $password "nvidia-smi" -runAsSudo -ignoreLinuxExitCode
     if ( $nvdiasmi ) {
         Write-Debug "Successfully fetched the nvidia-smi command result"
     } else {
@@ -140,8 +140,6 @@ function Collect-Logs {
     #####
     # We first need to move copy from root folder to user folder for
     # Collect-TestLogs function to work
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command "cp * /home/$user" -ignoreLinuxExitCode:$true
     Collect-TestLogs -LogsDestination $LogDir -ScriptName `
         $currentTestData.files.Split('\')[3].Split('.')[0] -TestType "sh" -PublicIP `
         $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $user `
@@ -172,14 +170,13 @@ function Main {
     $currentTestResult = Create-TestResultObject
     $resultArr = @()
     $failureCount = 0
-    $superuser="root"
+    $user = "lisa"
     $testScript = "gpu-driver-install.sh"
     $driverLoaded = $null
 
     try {
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
-            -files $currentTestData.files -username $superuser -password $password -upload | Out-Null
+            -files $currentTestData.files -username $user -password $password -upload | Out-Null
         Write-Debug "Copied all required files to the Guest OS system"
 
         #Skip test case against distro CLEARLINUX and COREOS based here https://docs.microsoft.com/en-us/azure/virtual-machines/linux/n-series-driver-setup
@@ -204,26 +201,26 @@ function Main {
         $currentTestResult.TestSummary += New-ResultSummary -metaData "Using nVidia driver" -testName $CurrentTestData.testName -testResult $driver
 
         $cmdAddConstants = "echo -e `"driver=$($driver)`" >> constants.sh"
-        Run-LinuxCmd -username $superuser -password $password -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-            -command $cmdAddConstants | Out-Null
+        Run-LinuxCmd -username $user -password $password -ip $allVMData.PublicIP -port $allVMData.SSHPort `
+            -command $cmdAddConstants -runAsSudo | Out-Null
         Write-Debug "Added GPU driver name to constants.sh file"
 
         # For CentOS and RedHat the requirement is to install LIS RPMs
         if (@("REDHAT", "CENTOS").contains($global:detectedDistro)) {
             # HPC images already have the LIS RPMs installed
             $sts = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user -password $password `
-                -command "rpm -qa | grep kmod-microsoft-hyper-v && rpm -qa | grep microsoft-hyper-v" -ignoreLinuxExitCode
+                -command "rpm -qa | grep kmod-microsoft-hyper-v && rpm -qa | grep microsoft-hyper-v" -runAsSudo -ignoreLinuxExitCode
             Write-Debug "Checking if HPC image has rpm packages already. Here is query result: $sts"
 
             if (-not $sts) {
                 # Download and install the latest LIS version
-                Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-                    -password $password -command "wget -q https://aka.ms/lis -O - | tar -xz" -ignoreLinuxExitCode | Out-Null
+                Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+                    -password $password -command "wget -q https://aka.ms/lis -O - | tar -xz" -runAsSudo -ignoreLinuxExitCode | Out-Null
                 Write-Debug "Installed the latest LIS package"
-                Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-                    -password $password -command "cd LISISO && ./install.sh > installLIS.log" -ignoreLinuxExitCode | Out-Null
-                $installLIS = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-                    -password $password -command "cat /$superuser/LISISO/installLIS.log" -ignoreLinuxExitCode
+                Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+                    -password $password -command "cd LISISO && ./install.sh > installLIS.log" -runAsSudo -ignoreLinuxExitCode | Out-Null
+                $installLIS = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+                    -password $password -command "cat /$user/LISISO/installLIS.log" -runAsSudo -ignoreLinuxExitCode
                 Write-Debug "Checking installLIS log: $installLIS"
 
                 if ($installLIS -imatch "Unsupported kernel version") {
@@ -248,12 +245,12 @@ function Main {
         }
 
         # Start the test script
-        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-            -password $password -command "/$superuser/${testScript}" -runMaxAllowedTime 1800 -ignoreLinuxExitCode | Out-Null
+        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+            -password $password -command "bash ${testScript}" -runAsSudo -runMaxAllowedTime 3600 -ignoreLinuxExitCode | Out-Null
         Write-Debug "Ran test script $testscript in the Guest OS"
 
-        $installState = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-            -password $password -command "cat /$superuser/state.txt"
+        $installState = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+            -password $password -command "cat state.txt" -runAsSudo
         Write-Debug "Found installState: $installState"
 
         if ($installState -eq "TestSkipped") {
@@ -284,7 +281,7 @@ function Main {
 
         # Mandatory to have the nvidia driver loaded after restart
         $driverLoaded = Run-LinuxCmd -username $user -password $password -ip $allVMData.PublicIP `
-            -port $allVMData.SSHPort -command "lsmod | grep nvidia" -ignoreLinuxExitCode
+            -port $allVMData.SSHPort -command "lsmod | grep nvidia" -runAsSudo -ignoreLinuxExitCode
         if ($null -eq $driverLoaded) {
             Write-LogErr "GPU driver is not loaded after VM restart!"
             $currentTestResult.TestResult = Get-FinalResultHeader -resultarr "FAIL"
@@ -299,7 +296,7 @@ function Main {
         # Due to hyperthreading option, NV12s_v3 has 1GPU, 24s_v3 has 2 and 48s_v3 has 4 GPUs
         # Source: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/sizes-gpu
         $vmCPUCount = Run-LinuxCmd -username $user -password $password -ip $allVMData.PublicIP `
-            -port $allVMData.SSHPort -command "nproc" -ignoreLinuxExitCode
+            -port $allVMData.SSHPort -command "nproc" -runAsSudo -ignoreLinuxExitCode
         if ( $vmCPUCount ) {
             Write-Debug "Successfully fetched nproc result: $vmCPUCount"
         } else {

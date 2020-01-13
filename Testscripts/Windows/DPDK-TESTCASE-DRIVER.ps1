@@ -84,11 +84,11 @@ function Set-Phase() {
 	param (
 		[string] $phase_msg
 	)
-	$superUser = "root"
+	$superUser = "lisa"
 
 	Set-Content "$LogDir\phase.txt" $phase_msg
 	Write-LogInfo "Changing phase to $phase_msg"
-	Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "echo $phase_msg > phase.txt"
+	Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "echo $phase_msg > phase.txt" -runAsSudo
 }
 
 function Confirm-WithinPercentage() {
@@ -121,7 +121,7 @@ function Main {
 	$resultArr = @()
 	$currentTestResult = Create-TestResultObject
 
-	$superUser = "root"
+	$superUser = "lisa"
 
 	try {
 		# enables root access and key auth
@@ -205,7 +205,6 @@ function Main {
 
 		# start test
 		$startTestCmd = @"
-cd /root/
 ./dpdkSetupAndRunTest.sh 2>&1 > dpdkConsoleLogs.txt
 . utils.sh
 collect_VM_properties
@@ -219,21 +218,23 @@ collect_VM_properties
 		# upload user specified file from Testcase.xml to root's home
 		Copy-RemoteFiles -uploadTo $masterVM.PublicIP -port $masterVM.SSHPort -files $bashFilePaths -username $superUser -password $password -upload
 
-		Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "chmod +x *.sh"
-		$testJob = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "./StartDpdkTest.sh" -RunInBackground
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo
+		}
+		$testJob = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "./StartDpdkTest.sh" -RunInBackground -runAsSudo
 
 		# monitor test
 		$outputCounter = 0
 		$oldPhase = ""
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			if ($outputCounter -eq 5) {
-				$currentOutput = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+				$currentOutput = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1" -runAsSudo
 				Write-LogInfo "Current Test Output: $currentOutput"
 
 				$outputCounter = 0
 			}
 
-			$currentPhase = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "cat phase.txt"
+			$currentPhase = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort -username $superUser -password $password -command "cat phase.txt" -runAsSudo
 			if ($currentPhase -ne $oldPhase) {
 				Write-LogInfo "Read new phase: $currentPhase"
 				$oldPhase = $currentPhase
@@ -244,7 +245,7 @@ collect_VM_properties
 			Wait-Time -seconds 5
 		}
 		$finalState = Run-LinuxCmd -ip $masterVM.PublicIP -port $masterVM.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		Copy-RemoteFiles -downloadFrom $masterVM.PublicIP -port $masterVM.SSHPort `
 			-username $superUser -password $password -download -downloadTo $LogDir `
 			-files "*.csv, *.txt, *.log, logdir/*.log"

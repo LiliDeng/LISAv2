@@ -6,7 +6,7 @@ $MIN_KERNEL_VERSION = "4.20"
 
 function Main {
 	# Create test result
-	$superUser = "root"
+	$superUser = $user
 	$testResult = $null
 
 	try {
@@ -45,30 +45,31 @@ function Main {
 
 		#region BUILD INSTALL RDMA CORE
 		$build_install_rdma_core = @"
-cd /root/
-./build_install_rdma_core.sh > buildInstallRdmaCoreLogs.txt 2>&1
+bash build_install_rdma_core.sh > buildInstallRdmaCoreLogs.txt 2>&1
 "@
 		Set-Content "$LogDir\StartBuildInstallRdmaCore.sh" $build_install_rdma_core
 		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort `
 			-files "$constantsFile,$LogDir\StartBuildInstallRdmaCore.sh" -username $superUser -password $password -upload
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+			-username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo | Out-Null
 		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartBuildInstallRdmaCore.sh" -RunInBackground
+			-username $superUser -password $password -command "bash StartBuildInstallRdmaCore.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR BUILD INSTALL RDMA CORE
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 buildInstallRdmaCoreLogs.txt | head -1"
+				-username $superUser -password $password -command "tail -2 buildInstallRdmaCoreLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 		if ($testResult -ne "PASS") {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chown -R ${user}:${user} /root/" -runAsSudo | out-null
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 			Copy-RemoteFiles -downloadFrom $vmData.PublicIP -port $vmData.SSHPort `
 				-username $superUser -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
 			return $testResult
@@ -85,7 +86,6 @@ cd /root/
 
 		#region INSTALL CONFIGURE DPDK
 		$install_configure_dpdk = @"
-cd /root/
 ./dpdkSetup.sh > dpdkConsoleLogs.txt 2>&1
 "@
 		Set-Content "$LogDir\StartDpdkPrimarySecondarySetup.sh" $install_configure_dpdk
@@ -93,22 +93,24 @@ cd /root/
 			-files "$constantsFile,$LogDir\StartDpdkPrimarySecondarySetup.sh" -username $superUser -password $password -upload
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+			-username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo | Out-Null
 		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkPrimarySecondarySetup.sh" -RunInBackground
+			-username $superUser -password $password -command "bash StartDpdkPrimarySecondarySetup.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 		if ($testResult -ne "PASS") {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chown -R ${user}:${user} /root/" -runAsSudo | out-null
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 			Copy-RemoteFiles -downloadFrom $vmData.PublicIP -port $vmData.SSHPort `
 				-username $superUser -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
 			return $testResult
@@ -116,7 +118,6 @@ cd /root/
 
 		#region INSTALL CONFIGURE DPDK PRIMARY/SECONDARY
 		$install_configure_primary_secondary_processes = @"
-cd /root/
 ./dpdk_verify_primary_secondary.sh > dpdkVerifyPrimarySecondaryLogs.txt 2>&1
 . utils.sh
 collect_VM_properties
@@ -126,22 +127,24 @@ collect_VM_properties
 			-files "$constantsFile,$LogDir\StartDpdkPrimarySecondaryVerify.sh" -username $superUser -password $password -upload
 
 		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+			-username $superUser -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo | Out-Null
 		$testJob = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkPrimarySecondaryVerify.sh" -RunInBackground
+			-username $superUser -password $password -command "bash StartDpdkPrimarySecondaryVerify.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK PRIMARY/SECONDARY
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkVerifyPrimarySecondaryLogs.txt | head -1"
+				-username $superUser -password $password -command "tail -2 dpdkVerifyPrimarySecondaryLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $superUser -password $password -command "cat state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 
+		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chown -R ${user}:${user} /root/" -runAsSudo | out-null
+		Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 		Copy-RemoteFiles -downloadFrom $vmData.PublicIP -port $vmData.SSHPort `
 			-username $superUser -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
 		$primarySecondaryLogFile = "dpdkVerifyPrimarySecondaryLogs.txt"
