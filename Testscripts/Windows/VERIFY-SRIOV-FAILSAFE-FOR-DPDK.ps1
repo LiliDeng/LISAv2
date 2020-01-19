@@ -4,16 +4,16 @@ param([object] $AllVmData,
 	  [object] $CurrentTestData)
 
 function Invoke-DpdkTestPmd {
-	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "bash StartDpdkTestPmd.sh" -RunInBackground -runAsSudo
+	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "bash StartDpdkTestPmd.sh" -RunInBackground -runAsSudo
 
 	#region MONITOR TEST
 	while ((Get-Job -Id $testJob).State -eq "Running") {
-		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
+		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
 	$finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "cat /root/state.txt" -runAsSudo
-	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown -R ${user}:${user} /root/" -runAsSudo | out-null
+	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown ${user}:${user} /root/*" -runAsSudo | out-null
 	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 	Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -download -downloadTo $currentDir -files "*.csv, *.txt, *.log"
 
