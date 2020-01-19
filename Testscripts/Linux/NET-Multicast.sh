@@ -20,7 +20,7 @@
 ########################################################################
 function Execute_Validate_Remote_Command(){
     cmd_to_run=$1
-    ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" $cmd_to_run
+    ssh "$remote_user"@"$STATIC_IP2" $cmd_to_run
     if [ $? -ne 0 ]; then
         LogMsg "Could not enable ALLMULTI on VM2"
         SetTestStateAborted
@@ -136,7 +136,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Turn off dependency VM
-ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "init 0"
+ssh "$remote_user"@"$STATIC_IP2" "init 0"
 
 LogMsg "Multicast summary"
 LogMsg "${multicastSummary}"

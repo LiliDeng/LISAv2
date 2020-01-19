@@ -26,7 +26,6 @@ function Get-TestStatus {
 
 function Main {
 	# Create test result
-	$superUser = "root"
 	$testResult = $null
 
 	try {
@@ -41,12 +40,12 @@ function Main {
 		Write-LogInfo "  Internal IP : $($clientVMData.InternalIP)"
 
 		# PROVISION VMS FOR LISA WILL ENABLE ROOT USER AND WILL MAKE ENABLE PASSWORDLESS AUTHENTICATION ACROSS ALL VMS IN SAME HOSTED SERVICE.
-		Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+		Provision-VMsForLisa -allVMData $allVMData
 		#endregion
 
 		Write-LogInfo "Getting Active NIC Name."
 		$getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
-		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
+		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
 		Write-LogInfo "CLIENT $DataPath NIC: $clientNicName"
 
 		Write-LogInfo "Generating constants.sh ..."
@@ -61,7 +60,7 @@ function Main {
 		}
 
 		$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $user -password $password -command "uname -r"
+			-username $user -password $password -command "uname -r" -runAsSudo
 		if (Is-DpdkCompatible -KernelVersion $currentKernelVersion -DetectedDistro $global:DetectedDistro) {
 			Write-LogInfo "Confirmed Kernel version supported: $currentKernelVersion"
 		} else {
@@ -82,23 +81,24 @@ collect_VM_properties
 "@
 		Set-Content "$LogDir\StartDpdkSetup.sh" $install_configure_dpdk
 		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-files "$constantsFile,$LogDir\StartDpdkSetup.sh" -username $superUser -password $password -upload
+			-files "$constantsFile,$LogDir\StartDpdkSetup.sh" -username $user -password $password -upload
 
-		Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+		}
 		$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkSetup.sh" -RunInBackground
+			-username $user -password $password -command "bash StartDpdkSetup.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+				-username $user -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status for job ${testJob}: $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $user -password $password -command "cat /root/state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 		if ($testResult -ne "PASS") {
 			return $testResult
@@ -113,12 +113,13 @@ collect_VM_properties
 "@
 		Set-Content "$LogDir\run_dpdk_ring_latency_wrapper.sh" $run_dpdk_ring_latency
 		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-files "$LogDir\run_dpdk_ring_latency_wrapper.sh" -username $superUser -password $password -upload
+			-files "$LogDir\run_dpdk_ring_latency_wrapper.sh" -username $user -password $password -upload
 
-		Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+		}
 		$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "./run_dpdk_ring_latency_wrapper.sh" -RunInBackground
+			-username $user -password $password -command "bash run_dpdk_ring_latency_wrapper.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK RING LATENCY
@@ -127,14 +128,14 @@ collect_VM_properties
 		$timeout = 20
 		while ($retries -lt $maxRetries -and (Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-				-username $superUser -password $password -command "tail -2 run_dpdk_ring_latency.txt | head -1"
+				-username $user -password $password -command "tail -2 /root/run_dpdk_ring_latency.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status for job ${testJob}: $currentStatus"
 			Wait-Time -Seconds $timeout
 			$retries++
 		}
 		Get-Job -Id $testJob | Stop-Job -ErrorAction SilentlyContinue
 		$dpdkRingLatencyStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $user -password $password -command "cat /root/state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkRingLatencyStatus
 		if ($testResult -ne "PASS") {
 			return $testResult

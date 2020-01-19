@@ -15,7 +15,7 @@
 
 function Execute_Validate_Remote_Command(){
     cmd_to_run=$1
-    ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$VF_IP2" $cmd_to_run
+    ssh "$remote_user"@"$VF_IP2" $cmd_to_run
     if [ $? -ne 0 ]; then
         LogErr "Could not run the command '${cmd_to_run}' on VM2"
         SetTestStateAborted

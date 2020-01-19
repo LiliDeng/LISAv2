@@ -31,8 +31,9 @@ if [ -e "${Custom_Path}/${keyTarFile}" ]; then
 else
     echo | ssh-keygen -N ''
     cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys
-    echo "Host *" > /root/.ssh/config
+    echo "Host *" >> /root/.ssh/config
     echo "StrictHostKeyChecking no" >> /root/.ssh/config
+    echo "PubkeyAuthentication yes" >> /root/.ssh/config
     rm -rf /root/.ssh/known_hosts
     if [ -e ${Custom_Path} ]; then
         cd /root/ && tar -cvf ${keyTarFile} .ssh/*

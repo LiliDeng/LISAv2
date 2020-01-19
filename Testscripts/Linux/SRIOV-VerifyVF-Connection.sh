@@ -56,19 +56,19 @@ if [[ "$NIC_COUNT" -gt 1 ]];then
             fi
         fi
     done
-    CLIENT_NIC_IPs=$(ssh root@"$VF_IP2" "ip add show | grep -v SLAVE | grep BROADCAST | sed 's/:/ /g' | awk '{print \$2}'")
+    CLIENT_NIC_IPs=$(ssh "$remote_user"@"$VF_IP2" "ip add show | grep -v SLAVE | grep BROADCAST | sed 's/:/ /g' | awk '{print \$2}'")
     CLIENT_NIC_IPs=($CLIENT_NIC_IPs)
     for CLIENT_NIC in "${CLIENT_NIC_IPs[@]}"
     do
-        client_ip_address=$(ssh root@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
+        client_ip_address=$(ssh "$remote_user"@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
         if [[ -z "$client_ip_address" ]] ; then
-            ssh root@"${VF_IP2}" "pkill dhclient"
+            ssh "$remote_user"@"${VF_IP2}" "pkill dhclient"
             sleep 3
-            ssh root@"${VF_IP2}" "timeout 20 dhclient $CLIENT_NIC"
-            client_ip_address=$(ssh root@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
+            ssh "$remote_user"@"${VF_IP2}" "timeout 20 dhclient $CLIENT_NIC"
+            client_ip_address=$(ssh "$remote_user"@"$VF_IP2" "ip addr show $CLIENT_NIC | grep 'inet\b'")
             if [[ -z "$client_ip_address" ]] ; then
                 LogMsg "NIC $CLIENT_NIC doesn't have ip even after running dhclient"
-                client_if_config=$(ssh root@"$VF_IP2" "ip a")
+                client_if_config=$(ssh "$remote_user"@"$VF_IP2" "ip a")
                 LogMsg "Client ifconfig ${client_if_config}"
                 SetTestStateFailed
                 exit 0
@@ -163,7 +163,7 @@ while [ $__iterator -le "$vf_count" ]; do
 
     # Send 1GB file from VM1 to VM2 via eth1
     output_file_path=$(find / -name $output_file)
-    scp -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$output_file_path" "$remote_user"@"$static_IP_2":/tmp/"$output_file"
+    scp "$output_file_path" "$remote_user"@"$static_IP_2":/tmp/"$output_file"
     if [ 0 -ne $? ]; then
         LogErr "Unable to send the file from VM1 to VM2 ($static_IP_2)"
         SetTestStateFailed
@@ -182,10 +182,10 @@ while [ $__iterator -le "$vf_count" ]; do
 
     # Get the VF name from VM2
     cmd_to_send="ip addr | grep \"$static_IP_2\" | awk '{print \$NF}'"
-    synthetic_interface_vm_2=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$cmd_to_send")
+    synthetic_interface_vm_2=$(ssh "$remote_user"@"$static_IP_2" "$cmd_to_send")
     if [[ $DISTRO_VERSION =~ ^6\. ]]; then
         synthetic_MAC_command="ip link show "${synthetic_interface_vm_2}" | grep ether | awk '{print \$2}'"
-        synthetic_MAC=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$synthetic_MAC_command")
+        synthetic_MAC=$(ssh "$remote_user"@"$static_IP_2" "$synthetic_MAC_command")
         cmd_to_send="grep -il ${synthetic_MAC} /sys/class/net/*/address | grep -v "${synthetic_interface_vm_2}" | sed 's/\// /g' | awk '{print \$4}'"
     else
         if [[ -d /sys/firmware/efi ]]; then
@@ -196,9 +196,9 @@ while [ $__iterator -le "$vf_count" ]; do
             cmd_to_send="find /sys/devices/* -name "*${synthetic_interface_vm_2}" | grep pci | sed 's/\// /g' | awk '{print $12}'"
         fi
     fi
-    vf_interface_vm_2=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$cmd_to_send")
+    vf_interface_vm_2=$(ssh "$remote_user"@"$static_IP_2" "$cmd_to_send")
 
-    rx_value=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" cat /sys/class/net/"${vf_interface_vm_2}"/statistics/rx_packets)
+    rx_value=$(ssh "$remote_user"@"$static_IP_2" cat /sys/class/net/"${vf_interface_vm_2}"/statistics/rx_packets)
     LogMsg "RX value after sending the file: $rx_value"
     if [ "$rx_value" -lt 400000 ]; then
         LogErr "insufficient RX packets received"

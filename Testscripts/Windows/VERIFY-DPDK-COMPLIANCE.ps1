@@ -3,8 +3,6 @@
 param([object] $AllVmData,
 	[object] $CurrentTestData)
 
-$SUPER_USER = "root"
-
 function Check-DPDKCompliance {
 	Write-LogInfo "DPDK VM details:"
 	Write-LogInfo "  RoleName : $($allVMData.RoleName)"
@@ -13,14 +11,14 @@ function Check-DPDKCompliance {
 	Write-LogInfo "  Internal IP : $($allVMData.InternalIP)"
 
 	$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $user -password $password -command "uname -r"
+			-username $user -password $password -command "uname -r" -runAsSudo
 	if (Is-DpdkCompatible -KernelVersion $currentKernelVersion -DetectedDistro $global:DetectedDistro) {
 		Write-LogInfo "Confirmed Kernel version supported: $currentKernelVersion"
 	} else {
 		Write-LogWarn "Unsupported Kernel version: $currentKernelVersion or unsupported distro $($global:DetectedDistro)"
 		return $global:ResultSkipped
 	}
-	Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+	Provision-VMsForLisa -allVMData $allVMData
 
 	Write-LogInfo "Generating constants.sh ..."
 	$constantsFile = "$LogDir\constants.sh"
@@ -43,25 +41,28 @@ collect_VM_properties
 	Set-Content "$LogDir\StartDpdkSetup.sh" $installDPDKCommand
 	Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
 		-files "$constantsFile,$LogDir\StartDpdkSetup.sh" `
-		-username $SUPER_USER -password $password -upload
+		-username $user -password $password -upload
 
 	Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "chmod +x *.sh" | Out-Null
+		-username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo | Out-Null
 	$testJob = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "./StartDpdkSetup.sh" `
-		-RunInBackground
+		-username $user -password $password -command "bash StartDpdkSetup.sh" `
+		-RunInBackground -runAsSudo
 
 	while ((Get-Job -Id $testJob).State -eq "Running") {
 		$currentStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-			-username $SUPER_USER -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+			-username $user -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" `
+			-runAsSudo
 		Write-LogInfo "Current Test Status: $currentStatus"
 		Wait-Time -seconds 20
 	}
 
 	$finalStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -command "cat /root/state.txt"
+		-username $user -password $password -command "cat /root/state.txt" -runAsSudo
+	Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+		-password $password -command "chown $user /root/*; cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
 	Copy-RemoteFiles -downloadFrom $allVMData.PublicIP -port $allVMData.SSHPort `
-		-username $SUPER_USER -password $password -download `
+		-username $user -password $password -download `
 		-downloadTo $LogDir -files "*.csv, *.txt, *.log"
 
 	if ($finalStatus -imatch "TestFailed") {

@@ -24,7 +24,7 @@ done
 #
 ICA_TESTCOMPLETED="TestCompleted"  # The test completed successfully
 ICA_TESTFAILED="TestFailed"        # Error occurred during the test
-
+HOMEDIR=$(pwd)
 #######################################################################
 #
 # LogMsg()
@@ -32,11 +32,11 @@ ICA_TESTFAILED="TestFailed"        # Error occurred during the test
 #######################################################################
 LogMsg() {
 	echo $(date "+%b %d %Y %T") : "${1}"    # Add the time stamp to the log message
-	echo "${1}" >> ~/build-CustomLIS.txt
+	echo "${1}" >> ${HOMEDIR}/build-CustomLIS.txt
 }
 
 UpdateTestState() {
-	echo "${1}" > ~/state.txt
+	echo "${1}" > ${HOMEDIR}/state.txt
 }
 
 if [ -z "$CustomLIS" ]; then
@@ -51,7 +51,7 @@ fi
 if [ "${CustomLIS}" == "LatestLIS" ];then
     CustomLIS=$(curl -Ls -o /dev/null -w %{url_effective} http://aka.ms/lis)
 fi
-touch ~/build-CustomLIS.txt
+touch ${HOMEDIR}/build-CustomLIS.txt
 
 # Detect distro and version
 DistroName="Unknown"
@@ -75,11 +75,11 @@ if [ -f /etc/UnitedLinux-release ] ; then
 fi
 
 LogMsg "*****OS Info*****"
-cat /etc/*-release >> ~/build-CustomLIS.txt 2>&1
+cat /etc/*-release >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 LogMsg "*****Kernel Info*****"
-uname -r >> ~/build-CustomLIS.txt 2>&1
+uname -r >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 LogMsg "*****LIS Info*****"
-modinfo hv_vmbus >> ~/build-CustomLIS.txt 2>&1
+modinfo hv_vmbus >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 
 if [ "${CustomLIS}" == "lisnext" ]; then
 	LISSource="https://github.com/LIS/lis-next.git"
@@ -91,7 +91,7 @@ elif [[ $CustomLIS == *.rpm ]]; then
 	yum install -y wget tar
 	wget $CustomLIS
 	LogMsg "Installing ${CustomLIS##*/}"
-	rpm -ivh "${CustomLIS##*/}"  >> ~/build-CustomLIS.txt 2>&1
+	rpm -ivh "${CustomLIS##*/}"  >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	LISInstallStatus=$?
 	UpdateTestState $ICA_TESTCOMPLETED
 	if [ $LISInstallStatus -ne 0 ]; then
@@ -106,16 +106,16 @@ elif [[ $CustomLIS == *.tar.gz ]]; then
 	LogMsg "Custom LIS:$CustomLIS"
 	LogMsg "LIS tar file web link detected. Downloading $CustomLIS"
 	sed -i '/^exclude/c\#exclude' /etc/yum.conf
-	yum install -y git make tar gcc bc patch dos2unix wget xz >> ~/build-CustomLIS.txt 2>&1
+	yum install -y git make tar gcc bc patch dos2unix wget xz >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	wget $CustomLIS
 	LogMsg "Extracting ${CustomLIS##*/}"
 	tar -xvzf "${CustomLIS##*/}"
 	LogMsg "Installing ${CustomLIS##*/}"
 	cd LISISO
-	./install.sh  >> ~/build-CustomLIS.txt 2>&1
+	./install.sh  >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	LISInstallStatus=$?
 	UpdateTestState $ICA_TESTCOMPLETED
-	modinfo hv_vmbus >> ~/build-CustomLIS.txt 2>&1
+	modinfo hv_vmbus >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	if [ $LISInstallStatus -ne 0 ]; then
 		LogMsg "CUSTOM_LIS_FAIL"
 		UpdateTestState $ICA_TESTFAILED
@@ -132,9 +132,9 @@ if [ $DistroName == "SLES" -o $DistroName == "SUSE" -o $DistroName == "UBUNTU" ]
 elif [ $DistroName == "CENTOS" -o $DistroName == "REDHAT" -o $DistroName == "FEDORA" -o $DistroName == "ORACLELINUX" ]; then
 	LogMsg "Installing dependencies..."
 	sed -i '/^exclude/c\#exclude' /etc/yum.conf
-	yum install -y git make tar gcc bc patch wget xz >> ~/build-CustomLIS.txt 2>&1
+	yum install -y git make tar gcc bc patch wget xz >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	LogMsg "Downloading LIS source from ${LISSource}..."
-	git clone ${LISSource} >> ~/build-CustomLIS.txt 2>&1
+	git clone ${LISSource} >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	cd ${sourceDir}
 	git checkout ${LISbranch}
 	LogMsg "Downloaded LIS from branch ${LISbranch}..."
@@ -152,7 +152,7 @@ elif [ $DistroName == "CENTOS" -o $DistroName == "REDHAT" -o $DistroName == "FED
 
 	pushd $LISsourceDir
 	LogMsg "LIS is installing from branch $(pwd)..."
-	./*-hv-driver-install >> ~/build-CustomLIS.txt 2>&1
+	./*-hv-driver-install >> ${HOMEDIR}/build-CustomLIS.txt 2>&1
 	if [ $? -ne 0 ]; then
 		LogMsg "CUSTOM_LIS_FAIL"
 		UpdateTestState $ICA_TESTFAILED

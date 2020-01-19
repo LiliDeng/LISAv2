@@ -19,7 +19,7 @@
 UtilsInit
 
 # Constants/Globals
-HOMEDIR="/root"
+HOMEDIR=$(pwd)
 # Get distro information
 GetDistro
 

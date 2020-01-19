@@ -158,23 +158,19 @@ SendFile(){
     fi
 
     LogMsg "Copy files to dependency vm: ${STATIC_IP2}"
-    scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${homeDir}/NET-Netperf-Server.sh \
+    scp ${homeDir}/NET-Netperf-Server.sh \
         ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         LogErr "Unable to copy test scripts to dependency VM: ${STATIC_IP2}. scp command failed."
         return 1
     fi
-    scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${homeDir}/constants.sh \
-        ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
-    scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${homeDir}/net_constants.sh \
-        ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
-    scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${homeDir}/utils.sh \
-        ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
+    scp ${homeDir}/constants.sh ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
+    scp ${homeDir}/net_constants.sh ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
+    scp ${homeDir}/utils.sh ${remote_user}@[${STATIC_IP2}]: > /dev/null 2>&1
 
     #Start netperf in server mode on the dependency vm
     LogMsg "Starting netperf in server mode on ${STATIC_IP2}"
-    ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${remote_user}@${STATIC_IP2} \
-        "echo '${remote_user_home}/NET-Netperf-Server.sh > netperf_ServerScript.log' | at now" > /dev/null 2>&1
+    ssh ${remote_user}@${STATIC_IP2} "echo '${remote_user_home}/NET-Netperf-Server.sh > netperf_ServerScript.log' | at now" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         LogErr "Unable to start netperf server script on the dependency vm."
         return 1
@@ -185,8 +181,7 @@ SendFile(){
     server_state_file=serverstate.txt
     while [ $wait_for_server -gt 0 ]; do
         # Try to copy and understand server state
-        scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no \
-        ${remote_user}@[${STATIC_IP2}]:${remote_user_home}/state.txt ${homeDir}/${server_state_file} > /dev/null 2>&1
+        scp ${remote_user}@[${STATIC_IP2}]:${remote_user_home}/state.txt ${homeDir}/${server_state_file} > /dev/null 2>&1
 
         if [ -f ${homeDir}/${server_state_file} ]; then
             server_state=$(head -n 1 ${homeDir}/${server_state_file})
@@ -378,11 +373,10 @@ else
 fi
 
 # Get logs from dependency vm
-scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no -r \
-${remote_user}@[${STATIC_IP2}]:${remote_user_home}/netperf_ServerScript.log ${homeDir}/netperf_ServerScript.log
+scp -r ${remote_user}@[${STATIC_IP2}]:${remote_user_home}/netperf_ServerScript.log ${homeDir}/netperf_ServerScript.log
 
 # Shutdown dependency VM
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no ${remote_user}@${STATIC_IP2} "init 0" &
+ssh ${remote_user}@${STATIC_IP2} "init 0" &
 
 if [[ $sts_sendfile -eq 1 || $sts_changemtu -eq 1 ]];then
     SetTestStateFailed

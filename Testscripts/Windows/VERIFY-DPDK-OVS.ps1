@@ -29,7 +29,6 @@ function Get-TestStatus {
 
 function Main {
 	# Create test result
-	$superUser = "root"
 	$testResult = $null
 
 	try {
@@ -70,13 +69,13 @@ function Main {
 		}
 
 		# PROVISION VMS FOR LISA WILL ENABLE ROOT USER AND WILL MAKE ENABLE PASSWORDLESS AUTHENTICATION ACROSS ALL VMS IN SAME HOSTED SERVICE.
-		Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+		Provision-VMsForLisa -allVMData $allVMData
 		#endregion
 
 		Write-LogInfo "Getting Active NIC Name."
 		$getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
-		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
-		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
+		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
+		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
 		if ($serverNicName -eq $clientNicName) {
 			Write-LogInfo "Client and Server VMs have same nic name: $clientNicName"
 		} else {
@@ -119,27 +118,29 @@ collect_VM_properties
 "@
 		Set-Content "$LogDir\StartDpdkOvsSetup.sh" $install_configure_dpdk
 		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-files "$constantsFile,$LogDir\StartDpdkOvsSetup.sh" -username $superUser -password $password -upload
+			-files "$constantsFile,$LogDir\StartDpdkOvsSetup.sh" -username $user -password $password -upload
 
-		Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+		}
 		$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "./StartDpdkOvsSetup.sh" -RunInBackground
+			-username $user -password $password -command "bash StartDpdkOvsSetup.sh" -RunInBackground -runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE DPDK
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-				-username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+				-username $user -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$dpdkStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $user -password $password -command "cat /root/state.txt" -runAsSudo
 		$testResult = Get-TestStatus $dpdkStatus
 		if ($testResult -ne "PASS") {
+			Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown ${user} /root/; cp /root/* ." -ignoreLinuxExitCode -runAsSudo | out-null
 			Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort `
-				-username $superUser -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
+				-username $user -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
 			return $testResult
 		}
 
@@ -152,27 +153,30 @@ collect_VM_properties
 "@
 		Set-Content "$LogDir\StartOvsSetup.sh" $install_configure_ovs
 		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-files "$LogDir\StartOvsSetup.sh" -username $superUser -password $password -upload
+			-files "$LogDir\StartOvsSetup.sh" -username $user -password $password -upload
 
-		Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "chmod +x *.sh" | Out-Null
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+		}
 		$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "./StartOvsSetup.sh" -RunInBackground
+			-username $user -password $password -command "bash StartOvsSetup.sh" -RunInBackground `
+			-runAsSudo
 		#endregion
 
 		#region MONITOR INSTALL CONFIGURE OVS
 		while ((Get-Job -Id $testJob).State -eq "Running") {
 			$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-				-username $superUser -password $password -command "tail -2 ovsConsoleLogs.txt | head -1"
+				-username $user -password $password -command "tail -2 /root/ovsConsoleLogs.txt | head -1" `
+				-runAsSudo
 			Write-LogInfo "Current Test Status : $currentStatus"
 			Wait-Time -seconds 20
 		}
 		$ovsStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -command "cat /root/state.txt"
+			-username $user -password $password -command "cat /root/state.txt" -runAsSudo
 		$testResult = Get-TestStatus $ovsStatus
-
+		Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown ${user} /root/; cp /root/* ." -ignoreLinuxExitCode -runAsSudo | out-null
 		Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort `
-			-username $superUser -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
+			-username $user -password $password -download -downloadTo $LogDir -files "*.txt, *.log"
 	} catch {
 		$ErrorMessage =  $_.Exception.Message
 		$ErrorLine = $_.InvocationInfo.ScriptLineNumber

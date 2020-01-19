@@ -13,7 +13,7 @@ function Resolve-UninitializedIB {
 			$retries = 0
 			while ($retries -lt 4) {
 				$ibvOutput = Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username `
-					$superUser -password $password $cmd -ignoreLinuxExitCode:$true
+					$user -password $password $cmd -ignoreLinuxExitCode:$true -runAsSudo
 				if (-not $ibvOutput) {
 					Write-LogWarn "IB is NOT initialized in $($VMData.RoleName)"
 					$TestProvider.RestartAllDeployments($VmData)
@@ -38,9 +38,6 @@ function Main {
 	)
 	$resultArr = @()
 	$currentTestResult = Create-TestResultObject
-	# Define two different users in run-time
-	$superUser="root"
-
 	try {
 		$NoServer = $true
 		$NoClient = $true
@@ -96,13 +93,13 @@ function Main {
 			$i += 1
 		}
 		$FirstRun = $true
-		Provision-VMsForLisa -AllVMData $AllVMData -installPackagesOnRoleNames "none"
+		Provision-VMsForLisa -AllVMData $AllVMData
 		foreach ($VmData in $AllVMData) {
-			Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $superUser -password `
-				$password "echo $($VmData.RoleName) > /etc/hostname" | Out-Null
+			Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user -password `
+				$password "echo $($VmData.RoleName) > /etc/hostname" -runAsSudo | Out-Null
 			if ($VmData.RoleName -imatch "Client" -or $VmData.RoleName -imatch "dependency"){
-				Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser -password $password `
-					"echo '$($VmData.RoleName) $($VmData.InternalIP)' >> /etc/hosts" | Out-Null
+				Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user -password $password `
+					"echo '$($VmData.RoleName) $($VmData.InternalIP)' >> /etc/hosts" -runAsSudo | Out-Null
 			}
 		}
 		#endregion
@@ -167,7 +164,7 @@ function Main {
 		#region Upload files to master VM
 		foreach ($VMData in $AllVMData) {
 			Copy-RemoteFiles -uploadTo $VMData.PublicIP -port $VMData.SSHPort `
-				-files "$constantsFile,$($CurrentTestData.files)" -username $superUser -password $password -upload
+				-files "$constantsFile,$($CurrentTestData.files)" -username $user -password $password -upload
 		}
 		#endregion
 
@@ -190,18 +187,20 @@ function Main {
 		Write-LogInfo "SetupRDMA.sh is called"
 		# Call SetupRDMA.sh here, and it handles all packages, MPI, Benchmark installation.
 		foreach ($VMData in $AllVMData) {
-			Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $superUser `
-				-password $password "/root/SetupRDMA.sh" -RunInBackground | Out-Null
+			Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user `
+				-password $password "chmod +x *; cp * /root/" -runAsSudo | Out-Null
+			Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user `
+				-password $password "bash /root/SetupRDMA.sh" -RunInBackground -runAsSudo | Out-Null
 			Wait-Time -seconds 2
 		}
 
 		$timeout = New-Timespan -Minutes 120
 		$sw = [diagnostics.stopwatch]::StartNew()
-		while ($sw.elapsed -lt $timeout){
+		while ($sw.elapsed -lt $timeout) {
 			$vmCount = $AllVMData.Count
 			foreach ($VMData in $AllVMData) {
 				Wait-Time -seconds 15
-				$state = Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user -password $password "cat /root/state.txt" -runAsSudo
+				$state = Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user -password $password "cat state.txt" -runAsSudo
 				if ($state -eq "TestCompleted") {
 					$setupRDMACompleted = Run-LinuxCmd -ip $VMData.PublicIP -port $VMData.SSHPort -username $user -password $password `
 						"cat /root/constants.sh | grep setup_completed=0" -runAsSudo
@@ -249,17 +248,18 @@ function Main {
 				$ContinueMPITest = $true
 				foreach ($ClientVMData in $ClientMachines) {
 					Write-LogInfo "Getting initial MAC address info from $($ClientVMData.RoleName)"
-					Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-						-password $password "ip addr show $InfinibandNic | grep ether | awk '{print `$2}' > InitialInfiniBandMAC.txt"
+					Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+						-password $password "ip addr show $InfinibandNic | grep ether | awk '{print `$2}' > InitialInfiniBandMAC.txt" `
+						-runAsSudo
 				}
 			} else {
 				$ContinueMPITest = $true
 				foreach ($ClientVMData in $ClientMachines) {
 					Write-LogInfo "Step 1/2: Getting current MAC address info from $($ClientVMData.RoleName)"
-					$CurrentMAC = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-						-password $password "ip addr show $InfinibandNic | grep ether | awk '{print `$2}'"
-					$InitialMAC = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-						-password $password "cat InitialInfiniBandMAC.txt"
+					$CurrentMAC = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+						-password $password "ip addr show $InfinibandNic | grep ether | awk '{print `$2}'" -runAsSudo
+					$InitialMAC = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+						-password $password "cat InitialInfiniBandMAC.txt" -runAsSudo
 					if ($CurrentMAC -eq $InitialMAC) {
 						Write-LogInfo "Step 2/2: MAC address verified in $($ClientVMData.RoleName)."
 					} else {
@@ -273,19 +273,19 @@ function Main {
 				#region EXECUTE TEST
 				$Iteration += 1
 				Write-LogInfo "******************Iteration - $Iteration/$ExpectedSuccessCount*******************"
-				$TestJob = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -command "/root/TestRDMA_MultiVM.sh" -RunInBackground
+				$TestJob = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -command "/root/TestRDMA_MultiVM.sh" -RunInBackground -runAsSudo
 				#endregion
 
 				#region MONITOR TEST
 				while ((Get-Job -Id $TestJob).State -eq "Running") {
-					$CurrentStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-						-password $password -command "tail -n 1 /root/TestExecution.log"
+					$CurrentStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+						-password $password -command "tail -n 1 TestExecution.log" -runAsSudo
 					Write-LogInfo "Current Test Status : $CurrentStatus"
 					$temp=(Get-Job -Id $TestJob).State
 					Write-LogInfo "--------------------------------------------------------------------$temp-------------------------"
-					$FinalStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -command "cat /$superUser/state.txt"
+					$FinalStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -command "cat state.txt" -runAsSudo
 					Write-LogInfo "$FinalStatus"
 					Wait-Time -seconds 10
 					if ($FinalStatus -ne "TestRunning") {
@@ -296,19 +296,21 @@ function Main {
 
 				$temp=(Get-Job -Id $TestJob).State
 				Write-LogInfo "--------------------------------------------------------------------$temp-------------------------"
-				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -download -downloadTo $LogDir -files "/root/$InfinibandNic-status*"
-				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -download -downloadTo $LogDir -files "/root/IMB*"
-				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -download -downloadTo $LogDir -files "/root/kernel-logs-*"
-				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -download -downloadTo $LogDir -files "/root/TestExecution.log"
-				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -download -downloadTo $LogDir -files "/root/state.txt"
+				Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -command "chown ${user} /root/*; cp /root/* ." -ignoreLinuxExitCode -runAsSudo
+				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -download -downloadTo $LogDir -files "$InfinibandNic-status*"
+				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -download -downloadTo $LogDir -files "IMB*"
+				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -download -downloadTo $LogDir -files "kernel-logs-*"
+				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -download -downloadTo $LogDir -files "TestExecution.log"
+				Copy-RemoteFiles -downloadFrom $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -download -downloadTo $LogDir -files "state.txt"
 				$ConsoleOutput = ( Get-Content -Path "$LogDir\TestExecution.log" | Out-String )
-				$FinalStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $superUser `
-					-password $password -command "cat /$superUser/state.txt"
+				$FinalStatus = Run-LinuxCmd -ip $ServerVMData.PublicIP -port $ServerVMData.SSHPort -username $user `
+					-password $password -command "cat state.txt" -runAsSudo
 				if ($Iteration -eq 1) {
 					$TempName = "FirstBoot"
 				} else {

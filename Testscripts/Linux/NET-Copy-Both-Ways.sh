@@ -49,11 +49,6 @@ if [ "${STATIC_IP2:-UNDEFINED}" = "UNDEFINED" ]; then
     SetTestStateAborted
     exit 0
 fi
-if [ "${SSH_PRIVATE_KEY:-UNDEFINED}" = "UNDEFINED" ]; then
-    LogErr "The test parameter SSH_PRIVATE_KEY is not defined in constants file"
-    SetTestStateAborted
-    exit 0
-fi
 if [ "${NETMASK:-UNDEFINED}" = "UNDEFINED" ]; then
     LogMsg "The test parameter NETMASK is not defined in constants file . Defaulting to 255.255.255.0"
     NETMASK=255.255.255.0
@@ -130,14 +125,14 @@ fi
 LogMsg "Enough free space locally to create the file"
 LogMsg "Checking for disk space on $STATIC_IP2"
 # Check disk size on remote vm. Cannot use IsFreeSpace function directly. Need to export utils.sh to the remote_vm, source it and then access the functions therein
-scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no utils.sh "$remote_user"@"$STATIC_IP2":/tmp
+scp utils.sh "$remote_user"@"$STATIC_IP2":/tmp
 if [ 0 -ne $? ]; then
     LogErr "Cannot copy utils.sh to $STATIC_IP2:/tmp"
     SetTestStateFailed
     exit 0
 fi
 
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "
+ssh "$remote_user"@"$STATIC_IP2" "
     . /tmp/utils.sh
     IsFreeSpace $tmp $total_space
     if [ 0 -ne \$? ]; then
@@ -181,7 +176,7 @@ fi
 
 #disabling firewall on both VMs
 iptables -F
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "iptables -F"
+ssh "$remote_user"@"$STATIC_IP2" "iptables -F"
 
 dd if=$file_source of="$tmp"/"$output_file_1" bs=1M count=$((file_size/1024/1024))
 if [ 0 -ne $? ]; then
@@ -191,7 +186,7 @@ if [ 0 -ne $? ]; then
 fi
 
 LogMsg "Successfully created $output_file"
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "dd if=${file_source} of=${tmp}/${output_file_2} bs=1M count=$((file_size/1024/1024))"
+ssh "$remote_user"@"$STATIC_IP2" "dd if=${file_source} of=${tmp}/${output_file_2} bs=1M count=$((file_size/1024/1024))"
 if [ 0 -ne $? ]; then
     LogErr "Unable to create file $output_file_2 in $tmp"
     SetTestStateFailed
@@ -200,16 +195,16 @@ fi
 
 #compute md5sum
 local_md5sum_file_1=$(md5sum ${tmp}/${output_file_1} | cut -f 1 -d ' ')
-remote_md5sum_file_2=$(ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "md5sum ${tmp}/${output_file_2} |  cut -f 1 -d ' '")
+remote_md5sum_file_2=$(ssh "$remote_user"@"$STATIC_IP2" "md5sum ${tmp}/${output_file_2} |  cut -f 1 -d ' '")
 #send file to remote_vm
 remote_exit_status_file_path="${tmp}/exit_status"
 LogMsg "Remote exit status: ${remote_exit_status_file_path} "
 remote_cmd="
-    scp -i ${HOME}/.ssh/${SSH_PRIVATE_KEY} -o StrictHostKeyChecking=no ${tmp}/${output_file_2} ${remote_user}@${ipv4}:${tmp}/${output_file_2};echo \$? > ${remote_exit_status_file_path}
+    scp ${tmp}/${output_file_2} ${remote_user}@${ipv4}:${tmp}/${output_file_2};echo \$? > ${remote_exit_status_file_path}
 "
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "echo '${remote_cmd}' > send_file.sh"
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "setsid bash send_file.sh >/dev/null 2>&1 < /dev/null &"
-scp -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$tmp"/"$output_file_1" "$remote_user"@"$STATIC_IP2":"$tmp"/"$output_file_1"
+ssh "$remote_user"@"$STATIC_IP2" "echo '${remote_cmd}' > send_file.sh"
+ssh "$remote_user"@"$STATIC_IP2" "setsid bash send_file.sh >/dev/null 2>&1 < /dev/null &"
+scp "$tmp"/"$output_file_1" "$remote_user"@"$STATIC_IP2":"$tmp"/"$output_file_1"
 if [ 0 -ne $? ]; then
     LogErr "Unable to copy file $output_file_1 to $STATIC_IP2:$tmp/$output_file_1"
     SetTestStateFailed
@@ -217,7 +212,7 @@ if [ 0 -ne $? ]; then
 fi
 LogMsg "Successfully sent $output_file_1 to $STATIC_IP2:${tmp}/$output_file_1"
 
-remote_exit_status=$(ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "cat ${remote_exit_status_file_path}")
+remote_exit_status=$(ssh "$remote_user"@"$STATIC_IP2" "cat ${remote_exit_status_file_path}")
 if [ "$remote_exit_status" -ne 0 ]; then
     LogErr "Unable to copy file $output_file_2 to $ipv4:${tmp}/${output_file_2}"
     SetTestStateFailed
@@ -226,14 +221,14 @@ fi
 LogMsg "STATUS: $remote_exit_status"
 
 # save md5sumes of copied files
-remote_md5sum_file_1=$(ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "md5sum ${tmp}/${output_file_1} | cut -f 1 -d ' '")
+remote_md5sum_file_1=$(ssh "$remote_user"@"$STATIC_IP2" "md5sum ${tmp}/${output_file_1} | cut -f 1 -d ' '")
 local_md5sum_file_2=$(md5sum ${tmp}/${output_file_2} | cut -f 1 -d ' ')
 
 # delete files
 rm -f "$tmp"/$output_file_1
 rm -f "$tmp"/$output_file_2
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f ${tmp}/${output_file_1}"
-ssh -i "$homeDir"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "rm -f ${tmp}/${output_file_2}"
+ssh "$remote_user"@"$STATIC_IP2" "rm -f ${tmp}/${output_file_1}"
+ssh "$remote_user"@"$STATIC_IP2" "rm -f ${tmp}/${output_file_2}"
 if [ "$local_md5sum_file_1" != "$remote_md5sum_file_1" ]; then
     LogErr "md5sums differ for ${output_file_1}. Files do not match: ${local_md5sum_file_1} - ${remote_md5sum_file_1}"
     SetTestStateFailed

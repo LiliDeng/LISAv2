@@ -2039,6 +2039,7 @@ function apt_get_install () {
 	package_name=$1
 	dpkg_configure
 	sudo DEBIAN_FRONTEND=noninteractive apt --fix-broken install -y
+	CheckInstallLockUbuntu
 	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes $package_name
 	check_exit_status "apt_get_install $package_name" "exit"
 }
@@ -2946,8 +2947,7 @@ function test_rsync() {
     else
         LogMsg "Successfuly pinged the second vm through vxlan0 after configurations."
         LogMsg "Starting to transfer files with rsync"
-        rsyncPara="ssh -o StrictHostKeyChecking=no -i /root/.ssh/$SSH_PRIVATE_KEY"
-        echo "rsync -e '$rsyncPara' -avz /root/test root@242.0.0.11:/root" | at now +1 minutes
+        echo "rsync -e ssh -avz /root/test root@242.0.0.11:/root" | at now +1 minutes
         SetTestStateCompleted
         exit 0
     fi

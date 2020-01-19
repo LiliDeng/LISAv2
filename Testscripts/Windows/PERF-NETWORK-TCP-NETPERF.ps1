@@ -21,8 +21,7 @@ function Main {
             if ($vmData.RoleName -imatch "role-0") {
                 $clientVMData = $vmData
                 $noClient = $false
-            }
-            elseif ($vmData.RoleName -imatch "role-1") {
+            } elseif ($vmData.RoleName -imatch "role-1") {
                 $noServer = $false
                 $serverVMData = $vmData
             }
@@ -42,16 +41,16 @@ function Main {
         Write-LogInfo "  SSH Port : $($serverVMData.SSHPort)"
 
         # PROVISION VMS FOR LISA WILL ENABLE ROOT USER AND WILL MAKE ENABLE PASSWORDLESS AUTHENTICATION ACROSS ALL VMS IN SAME HOSTED SERVICE.
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+        Provision-VMsForLisa -allVMData $allVMData
         #endregion
 
         Write-LogInfo "Getting Active NIC Name."
         if ($TestPlatform -eq "Azure") {
             $getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
             $clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-                -username "root" -password $password -command $getNicCmd).Trim()
+                -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
             $serverNicName = (Run-LinuxCmd -ip $serverVMData.PublicIP -port $serverVMData.SSHPort `
-                -username "root" -password $password -command $getNicCmd).Trim()
+                -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
         } elseif ($TestPlatform -eq "HyperV") {
             $clientNicName = Get-GuestInterfaceByVSwitch $TestParams.PERF_NIC $clientVMData.RoleName `
                 $clientVMData.HypervHost $user $clientVMData.PublicIP $password $clientVMData.SSHPort
@@ -60,14 +59,12 @@ function Main {
         }
         if ($serverNicName -eq $clientNicName) {
             $nicName = $clientNicName
-        }
-        else {
+        } else {
             Throw "Server and client SRIOV NICs are not same."
         }
         if ($currentTestData.AdditionalHWConfig.Networking -imatch "SRIOV") {
             $DataPath = "SRIOV"
-        }
-        else {
+        } else {
             $DataPath = "Synthetic"
         }
         Write-LogInfo "CLIENT $DataPath NIC: $clientNicName"
@@ -98,27 +95,32 @@ cd /root/
 collect_VM_properties
 "@
         Set-Content "$LogDir\StartnetperfTest.sh" $myString
-        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\StartnetperfTest.sh" -username "root" -password $password -upload
-        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files $currentTestData.files -username "root" -password $password -upload
+        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\StartnetperfTest.sh" -username $user -password $password -upload
+        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files $currentTestData.files -username $user -password $password -upload
 
-        $null = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "chmod +x *.sh"
-        $testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "/root/StartnetperfTest.sh" -RunInBackground
+        foreach ($vmData in $allVMData) {
+            Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh;cp * /root/" -runAsSudo
+        }
+        $testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "bash StartnetperfTest.sh" -RunInBackground -runAsSudo
         #endregion
 
         #region MONITOR TEST
         while ((Get-Job -Id $testJob).State -eq "Running") {
-            $currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "tail -1 netperfConsoleLogs.txt | head -1"
+            $currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "tail -1 /root/netperfConsoleLogs.txt | head -1" -runAsSudo
             Write-LogInfo "Current Test Status : $currentStatus"
             Wait-Time -seconds 20
         }
-        $finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "cat /root/state.txt"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "netperfConsoleLogs.txt"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "TestExecution.log"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "netperf-client-sar-output.txt"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "netperf-client-output.txt"
-        Copy-RemoteFiles -downloadFrom $serverVMData.PublicIP -port $serverVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "netperf-server-sar-output.txt"
-        Copy-RemoteFiles -downloadFrom $serverVMData.PublicIP -port $serverVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "netperf-server-output.txt"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
+        $finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "cat /root/state.txt" -runAsSudo
+        foreach ($vmData in $allVMData) {
+            Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chown ${user} /root/; cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
+        }
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "netperfConsoleLogs.txt"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "TestExecution.log"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "netperf-client-sar-output.txt"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "netperf-client-output.txt"
+        Copy-RemoteFiles -downloadFrom $serverVMData.PublicIP -port $serverVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "netperf-server-sar-output.txt"
+        Copy-RemoteFiles -downloadFrom $serverVMData.PublicIP -port $serverVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "netperf-server-output.txt"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
 
         $NetperfReportLog = Get-Content -Path "$LogDir\netperf-client-sar-output.txt"
 

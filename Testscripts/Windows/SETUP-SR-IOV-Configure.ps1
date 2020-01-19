@@ -180,25 +180,46 @@ function Main {
     # Set SSH key for both VMs
     # Setup ssh on VM1
     Copy-RemoteFiles -uploadTo $ipv4 -port $VMPort -files `
-        ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
+        ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
         -username $VMUsername -password $VMPassword -upload
     Copy-RemoteFiles -uploadTo $vm2ipv4 -port $VMPort -files `
-        ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
+        ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
         -username $VMUsername -password $VMPassword -upload
     Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
-        $VMPassword -command "chmod +x /home/${VMUsername}/*.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+        $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
     Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUsername -password `
-        $VMPassword -command "chmod +x /home/${VMUsername}/*.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+        $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+
+    $rootPasswordSet = Run-LinuxCmd -ip $ipv4 -port $VMPort `
+                        -username $VMUsername -password $VMPassword -runAsSudo `
+                        -command ("bash enableRoot.sh -password {1}" -f @($VMUsername, $VMPassword.Replace('"','')))
+    Write-LogInfo $rootPasswordSet
+    if (($rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL")) {
+        Write-LogInfo "root user enabled for $VMName and password set to $VMPassword"
+    } else {
+        Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
+    }
+
+    $rootPasswordSet = Run-LinuxCmd -ip $vm2ipv4 -port $VMPort `
+                        -username $VMUsername -password $VMPassword -runAsSudo `
+                        -command ("bash enableRoot.sh -password {1}" -f @($VMUsername, $VMPassword.Replace('"','')))
+    Write-LogInfo $rootPasswordSet
+    if (($rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL")) {
+        Write-LogInfo "root user enabled for $VM2Name and password set to $VMPassword"
+    } else {
+        Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
+    }
+
     Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
-        $VMPassword -command "./enablePasswordLessRoot.sh  /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo
+        $VMPassword -command "rm -rf /root/sshFix*; ./enablePasswordLessRoot.sh; cp /root/sshFix* ." -RunAsSudo
 
     # Copy keys from VM1 and setup VM2
     Copy-RemoteFiles -download -downloadFrom $ipv4 -port $VMPort -files `
-        "/home/$VMUsername/sshFix.tar" -username $VMUsername -password $VMPassword -downloadTo $LogDir
+        "sshFix.tar" -username $VMUsername -password $VMPassword -downloadTo $LogDir
     Copy-RemoteFiles -uploadTo $vm2ipv4 -port $VMPort -files "$LogDir\sshFix.tar" `
         -username $VMUsername -password $VMPassword -upload
     Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUsername -password `
-            $VMPassword -command "./enablePasswordLessRoot.sh  /home/$VMUsername ; cp -rf /root/.ssh /home/$VMUsername" -RunAsSudo
+            $VMPassword -command "cp sshFix* /root/; ./enablePasswordLessRoot.sh" -RunAsSudo
 
     # Construct and send sriov_constants.sh
     Remove-Item sriov_constants.sh -Force -EA SilentlyContinue

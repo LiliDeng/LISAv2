@@ -146,7 +146,9 @@ function Main {
     )
     $guestUsername = "root"
 
-    Provision-VMsForLisa -allVMData $AllVMData -installPackagesOnRoleNames none
+    Provision-VMsForLisa -allVMData $AllVMData
+    Run-LinuxCmd -username $user -password $VMPassword -ip $IPv4 `
+        -port $VMPort -command "cp * /root/" -ignoreLinuxExitCode:$true -runAsSudo | Out-Null
     # 10GB file size
     $filesize1 = 10737418240
     # 10GB file size

@@ -390,136 +390,56 @@ function Is-VmAlive {
     return "False"
 }
 
-Function Provision-VMsForLisa($allVMData, $installPackagesOnRoleNames)
+Function Provision-VMsForLisa($allVMData)
 {
 	$keysGenerated = $false
-	foreach ( $vmData in $allVMData )
-	{
-		Write-LogInfo "Configuring $($vmData.RoleName) for LISA test..."
-		Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\utils.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\enablePasswordLessRoot.sh" -username $user -password $password -upload
-		$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x /home/$user/*.sh" -runAsSudo
-		$rootPasswordSet = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-			-username $user -password $password -runAsSudo `
-			-command ("/home/{0}/enableRoot.sh -password {1}" -f @($user, $password.Replace('"','')))
-		Write-LogInfo $rootPasswordSet
-		if (( $rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL" ))
-		{
-			Write-LogInfo "root user enabled for $($vmData.RoleName) and password set to $password"
-		}
-		else
-		{
-			Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
-		}
-		$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "cp -ar /home/$user/*.sh ."
-		if ( $keysGenerated )
-		{
-			Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files "$LogDir\sshFix.tar" -username "root" -password $password -upload
-			$keyCopyOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
-			Write-LogInfo $keyCopyOut
-			if ( $keyCopyOut -imatch "KEY_COPIED_SUCCESSFULLY" )
-			{
-				$keysGenerated = $true
-				Write-LogInfo "SSH keys copied to $($vmData.RoleName)"
-				$md5sumCopy = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
-				if ( $md5sumGen -eq $md5sumCopy )
-				{
-					Write-LogInfo "md5sum check success for .ssh/id_rsa."
-				}
-				else
-				{
-					Throw "md5sum check failed for .ssh/id_rsa. Aborting test."
-				}
-			}
-			else
-			{
-				Throw "Error in copying SSH key to $($vmData.RoleName)"
-			}
-		}
-		else
-		{
-			$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "rm -rf /root/sshFix*"
-			$keyGenOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "./enablePasswordLessRoot.sh"
-			Write-LogInfo $keyGenOut
-			if ( $keyGenOut -imatch "KEY_GENERATED_SUCCESSFULLY" )
-			{
-				$keysGenerated = $true
-				Write-LogInfo "SSH keys generated in $($vmData.RoleName)"
-				Copy-RemoteFiles -download -downloadFrom $vmData.PublicIP -port $vmData.SSHPort  -files "/root/sshFix.tar" -username "root" -password $password -downloadTo $LogDir
-				$md5sumGen = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "md5sum .ssh/id_rsa"
-			}
-			else
-			{
-				Throw "Error in generating SSH key in $($vmData.RoleName)"
-			}
-		}
-	}
-
-	$packageInstallJobs = @()
-	foreach ( $vmData in $allVMData )
-	{
-		if ( $installPackagesOnRoleNames )
-		{
-			if ( $installPackagesOnRoleNames -imatch $vmData.RoleName )
-			{
-				Write-LogInfo "Executing $scriptName ..."
-				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName" -RunInBackground
-				$packageInstallObj = New-Object PSObject
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
-				if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
-					Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $vmData.RoleName
+	if ("root" -ne $user) {
+		foreach ($vmData in $allVMData) {
+			Write-LogInfo "Configuring $($vmData.RoleName) for LISA test..."
+			Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\utils.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\enablePasswordLessRoot.sh" -username $user -password $password -upload
+			$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh" -runAsSudo
+			if ("Azure" -ne $TestPlatform) {
+				$rootPasswordSet = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
+					-username $user -password $password -runAsSudo `
+					-command ("bash enableRoot.sh -password {1}" -f @($user, $password.Replace('"','')))
+				Write-LogInfo $rootPasswordSet
+				if (($rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL")) {
+					Write-LogInfo "root user enabled for $($vmData.RoleName) and password set to $password"
 				} else {
-					Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $($($vmData.ResourceGroupName) + "-" + $($vmData.RoleName))
+					Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
 				}
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name PublicIP -Value $vmData.PublicIP
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name SSHPort -Value $vmData.SSHPort
-				$packageInstallJobs += $packageInstallObj
-				#endregion
 			}
-			else
-			{
-				Write-LogInfo "$($vmData.RoleName) is set to NOT install packages. Hence skipping package installation on this VM."
-			}
-		}
-		else
-		{
-			Write-LogInfo "Executing $scriptName ..."
-			$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName" -RunInBackground
-			$packageInstallObj = New-Object PSObject
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
-			if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $vmData.RoleName
+			if ($keysGenerated) {
+				Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files "$LogDir\sshFix.tar" -username $user -password $password -upload
+				Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "cp sshFix* /root/" -runAsSudo | Out-Null
+				$keyCopyOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "./enablePasswordLessRoot.sh" -runAsSudo
+				Write-LogInfo $keyCopyOut
+				if ($keyCopyOut -imatch "KEY_COPIED_SUCCESSFULLY") {
+					$keysGenerated = $true
+					Write-LogInfo "SSH keys copied to $($vmData.RoleName)"
+					$md5sumCopy = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "md5sum /root/.ssh/id_rsa" -runAsSudo
+					if ($md5sumGen -eq $md5sumCopy) {
+						Write-LogInfo "md5sum check success for .ssh/id_rsa."
+					} else {
+						Throw "md5sum check failed for .ssh/id_rsa. Aborting test."
+					}
+				} else {
+					Throw "Error in copying SSH key to $($vmData.RoleName)"
+				}
 			} else {
-				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name RoleName -Value $($($vmData.ResourceGroupName) + "-" + $($vmData.RoleName))
+				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "rm -rf /root/sshFix*" -runAsSudo
+				$keyGenOut = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "./enablePasswordLessRoot.sh" -runAsSudo
+				Write-LogInfo $keyGenOut
+				if ($keyGenOut -imatch "KEY_GENERATED_SUCCESSFULLY") {
+					$keysGenerated = $true
+					Write-LogInfo "SSH keys generated in $($vmData.RoleName)"
+					Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "cp /root/sshFix* ." -runAsSudo | Out-Null
+					Copy-RemoteFiles -download -downloadFrom $vmData.PublicIP -port $vmData.SSHPort -files "sshFix.tar" -username $user -password $password -downloadTo $LogDir
+					$md5sumGen = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "md5sum /root/.ssh/id_rsa" -runAsSudo
+				} else {
+					Throw "Error in generating SSH key in $($vmData.RoleName)"
+				}
 			}
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name PublicIP -Value $vmData.PublicIP
-			Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name SSHPort -Value $vmData.SSHPort
-			$packageInstallJobs += $packageInstallObj
-			#endregion
-		}
-	}
-
-	$packageInstallJobsRunning = $true
-	while ($packageInstallJobsRunning)
-	{
-		$packageInstallJobsRunning = $false
-		foreach ( $job in $packageInstallJobs )
-		{
-			if ( (Get-Job -Id $($job.ID)).State -eq "Running" )
-			{
-				$currentStatus = Run-LinuxCmd -ip $job.PublicIP -port $job.SSHPort -username "root" -password $password -command "tail -n 1 /root/provisionLinux.log"
-				Write-LogInfo "Package Installation Status for $($job.RoleName) : $currentStatus"
-				$packageInstallJobsRunning = $true
-			}
-			else
-			{
-				Copy-RemoteFiles -download -downloadFrom $job.PublicIP -port $job.SSHPort -files "/root/provisionLinux.log" `
-					-username "root" -password $password -downloadTo $LogDir
-				Rename-Item -Path "$LogDir\provisionLinux.log" -NewName "$($job.RoleName)-provisionLinux.log" -Force | Out-Null
-			}
-		}
-		if ( $packageInstallJobsRunning )
-		{
-			Wait-Time -seconds 10
 		}
 	}
 }
@@ -659,27 +579,22 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 
 function Install-CustomLIS ($CustomLIS, $customLISBranch, $allVMData, [switch]$RestartAfterUpgrade, $TestProvider)
 {
-	try
-	{
+	try {
 		$CustomLIS = $CustomLIS.Trim()
-		if ( ($CustomLIS -ne "lisnext") -and !($CustomLIS.EndsWith("tar.gz")) -and ($CustomLIS -ne "LatestLIS"))
-		{
+		if (($CustomLIS -ne "lisnext") -and !($CustomLIS.EndsWith("tar.gz")) -and ($CustomLIS -ne "LatestLIS")) {
 			Write-LogErr "Only lisnext, LatestLIS and *.tar.gz links are supported. Use -CustomLIS lisnext -LISbranch <branch name>. Or use -CustomLIS <link to tar.gz file>. Or use -CustomLIS LatestLIS"
-		}
-		else
-		{
-			Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames none
+		} else {
+			Provision-VMsForLisa -allVMData $allVMData
 			$scriptName = "customLISInstall.sh"
 			$jobCount = 0
 			$lisSuccess = 0
 			$packageInstallJobs = @()
-			foreach ( $vmData in $allVMData )
-			{
-				Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\$scriptName,.\Testscripts\Linux\DetectLinuxDistro.sh" -username "root" -password $password -upload
-				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "chmod +x *.sh" -runAsSudo
-				$currentlisVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "modinfo hv_vmbus"
+			foreach ($vmData in $allVMData) {
+				Copy-RemoteFiles -uploadTo $vmData.PublicIP -port $vmData.SSHPort -files ".\Testscripts\Linux\$scriptName,.\Testscripts\Linux\DetectLinuxDistro.sh" -username $user -password $password -upload
+				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh" -runAsSudo
+				$currentlisVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "modinfo hv_vmbus" -runAsSudo
 				Write-LogInfo "Executing $scriptName ..."
-				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "/root/$scriptName -CustomLIS $CustomLIS -LISbranch $customLISBranch" -RunInBackground -runAsSudo
+				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "bash $scriptName -CustomLIS $CustomLIS -LISbranch $customLISBranch" -RunInBackground -runAsSudo
 				$packageInstallObj = New-Object PSObject
 				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
 				if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
@@ -695,42 +610,32 @@ function Install-CustomLIS ($CustomLIS, $customLISBranch, $allVMData, [switch]$R
 			}
 
 			$packageInstallJobsRunning = $true
-			while ($packageInstallJobsRunning)
-			{
+			while ($packageInstallJobsRunning) {
 				$packageInstallJobsRunning = $false
-				foreach ( $job in $packageInstallJobs )
-				{
-					if ( (Get-Job -Id $($job.ID)).State -eq "Running" )
-					{
-						$currentStatus = Run-LinuxCmd -ip $job.PublicIP -port $job.SSHPort -username "root" -password $password -command "tail -n 1 build-CustomLIS.txt"
+				foreach ($job in $packageInstallJobs) {
+					if ((Get-Job -Id $($job.ID)).State -eq "Running") {
+						$currentStatus = Run-LinuxCmd -ip $job.PublicIP -port $job.SSHPort -username $user -password $password -command "tail -n 1 build-CustomLIS.txt" -runAsSudo
 						Write-LogInfo "Package Installation Status for $($job.RoleName) : $currentStatus"
 						$packageInstallJobsRunning = $true
-					}
-					else
-					{
-						Copy-RemoteFiles -download -downloadFrom $job.PublicIP -port $job.SSHPort -files "build-CustomLIS.txt" -username "root" -password $password -downloadTo $LogDir
-						if ( ( Get-Content "$LogDir\build-CustomLIS.txt" ) -imatch "CUSTOM_LIS_SUCCESS" )
-						{
+					} else {
+						Copy-RemoteFiles -download -downloadFrom $job.PublicIP -port $job.SSHPort -files "build-CustomLIS.txt" -username $user -password $password -downloadTo $LogDir
+						if ((Get-Content "$LogDir\build-CustomLIS.txt" ) -imatch "CUSTOM_LIS_SUCCESS") {
 							$lisSuccess += 1
 						}
 						Move-Item -Path "$LogDir\build-CustomLIS.txt" -Destination "${LogDir}\$($job.RoleName)-build-CustomLIS.txt" -Force | Out-Null
 					}
 				}
-				if ( $packageInstallJobsRunning )
-				{
+				if ($packageInstallJobsRunning) {
 					Wait-Time -seconds 10
 				}
 			}
 
-			if ( $lisSuccess -eq $jobCount )
-			{
+			if ($lisSuccess -eq $jobCount) {
 				Write-LogInfo "LIS upgraded to `"$CustomLIS`" successfully in all VMs."
-				if ( $RestartAfterUpgrade )
-				{
+				if ($RestartAfterUpgrade) {
 					Write-LogInfo "Now restarting VMs..."
-					if ( $TestProvider.RestartAllDeployments($allVMData) )
-					{
-						$upgradedlisVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username "root" -password $password -command "modinfo hv_vmbus"
+					if ($TestProvider.RestartAllDeployments($allVMData)) {
+						$upgradedlisVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "modinfo hv_vmbus" -runAsSudo
 						Write-LogInfo "Old LIS: $currentlisVersion"
 						Write-LogInfo "New LIS: $upgradedlisVersion"
 						Add-Content -Value "Old LIS: $currentlisVersion" -Path ".\Report\AdditionalInfo-$TestID.html" -Force
@@ -740,23 +645,17 @@ function Install-CustomLIS ($CustomLIS, $customLISBranch, $allVMData, [switch]$R
 							return $false
 						}
 						return $true
-					}
-					else
-					{
+					} else {
 						return $false
 					}
 				}
 				return $true
-			}
-			else
-			{
+			} else {
 				Write-LogErr "LIS upgrade failed in $($jobCount-$lisSuccess) VMs."
 				return $false
 			}
 		}
-	}
-	catch
-	{
+	} catch {
 		Write-LogErr "Exception in Install-CustomLIS."
 		return $false
 	}

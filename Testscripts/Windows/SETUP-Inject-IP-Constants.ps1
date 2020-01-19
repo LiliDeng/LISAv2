@@ -157,25 +157,47 @@ function Main {
         $cmd+="echo `'SSH_PRIVATE_KEY=id_rsa`' >> /home/$VMUserName/net_constants.sh;";
         $vm2ipv4 = Get-IPv4ViaKVP $VM2Name $HvServer
         # Setup ssh on VM1
-        Copy-RemoteFiles -uploadTo $Ipv4 -port $VMPort -files `
-            ".\Testscripts\Linux\enablePasswordLessRoot.sh" `
-            -username $VMUserName -password $VMPassword -upload
+       Copy-RemoteFiles -uploadTo $ipv4 -port $VMPort -files `
+        ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
+        -username $VMUsername -password $VMPassword -upload
         Copy-RemoteFiles -uploadTo $vm2ipv4 -port $VMPort -files `
-            ".\Testscripts\Linux\enablePasswordLessRoot.sh" `
-            -username $VMUserName -password $VMPassword -upload
-        Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "chmod +x /home/$VMUserName/*.sh" -runAsSudo
-        Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "chmod +x /home/$VMUserName/*.sh" -runAsSudo
-        $null = Run-LinuxCmd -ip $Ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "./enablePasswordLessRoot.sh /home/$VMUserName ; cp -rf /root/.ssh /home/$VMUserName" -runAsSudo
+            ".\Testscripts\Linux\enablePasswordLessRoot.sh,.\Testscripts\Linux\enableRoot.sh,.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\SR-IOV-Utils.sh" `
+            -username $VMUsername -password $VMPassword -upload
+        Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
+            $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+        Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUsername -password `
+            $VMPassword -command "chmod +x *.sh" -RunAsSudo -ignoreLinuxExitCode:$true
+
+        $rootPasswordSet = Run-LinuxCmd -ip $ipv4 -port $VMPort `
+                            -username $VMUsername -password $VMPassword -runAsSudo `
+                            -command ("bash enableRoot.sh -password {1}" -f @($VMUsername, $VMPassword.Replace('"','')))
+        Write-LogInfo $rootPasswordSet
+        if (($rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL")) {
+            Write-LogInfo "root user enabled for $VMName and password set to $VMPassword"
+        } else {
+            Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
+        }
+
+        $rootPasswordSet = Run-LinuxCmd -ip $vm2ipv4 -port $VMPort `
+                            -username $VMUsername -password $VMPassword -runAsSudo `
+                            -command ("bash enableRoot.sh -password {1}" -f @($VMUsername, $VMPassword.Replace('"','')))
+        Write-LogInfo $rootPasswordSet
+        if (($rootPasswordSet -imatch "ROOT_PASSWRD_SET" ) -and ( $rootPasswordSet -imatch "SSHD_RESTART_SUCCESSFUL")) {
+            Write-LogInfo "root user enabled for $VM2Name and password set to $VMPassword"
+        } else {
+            Throw "Failed to enable root password / starting SSHD service. Please check logs. Aborting test."
+        }
+
+        Run-LinuxCmd -ip $ipv4 -port $VMPort -username $VMUsername -password `
+            $VMPassword -command "rm -rf /root/sshFix*; ./enablePasswordLessRoot.sh; cp /root/sshFix* ." -RunAsSudo
+
         # Copy keys from VM1 and setup VM2
-        Copy-RemoteFiles -download -downloadFrom $Ipv4 -port $VMPort -files `
-            "/home/$VMUserName/sshFix.tar" -username $VMUserName -password $VMPassword -downloadTo $LogDir
+        Copy-RemoteFiles -download -downloadFrom $ipv4 -port $VMPort -files `
+            "sshFix.tar" -username $VMUsername -password $VMPassword -downloadTo $LogDir
         Copy-RemoteFiles -uploadTo $vm2ipv4 -port $VMPort -files "$LogDir\sshFix.tar" `
-            -username $VMUserName -password $VMPassword -upload
-        $null = Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUserName -password `
-            $VMPassword -command "./enablePasswordLessRoot.sh /home/$VMUserName ; cp -rf /root/.ssh /home/$VMUserName" -runAsSudo
+                -username $VMUsername -password $VMPassword -upload
+        Run-LinuxCmd -ip $vm2ipv4 -port $VMPort -username $VMUsername -password `
+                $VMPassword -command "cp sshFix* /root/; ./enablePasswordLessRoot.sh" -RunAsSudo
     }
 
     Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $ipv4 -port $VMPort `

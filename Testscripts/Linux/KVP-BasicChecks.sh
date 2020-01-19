@@ -19,7 +19,7 @@
 }
 # Source constants file and initialize most common variables
 UtilsInit
-homeDir=$(dirname "$0")
+homeDir=$(pwd)
 #
 # Make sure constants.sh contains the variables we expect
 #

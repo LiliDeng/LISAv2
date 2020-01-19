@@ -40,7 +40,7 @@ function Main {
     Write-LogInfo "  Public IP : $($serverVMData.PublicIP)"
     Write-LogInfo "  SSH Port : $($serverVMData.SSHPort)"
 
-    Provision-VMsForLisa -allVMData $AllVmData -installPackagesOnRoleNames "none"
+    Provision-VMsForLisa -allVMData $AllVmData
 
     $null = Run-LinuxCmd -ip $serverVMData.PublicIP -port $serverVMData.SSHPort -username $user -password $password -runMaxAllowedTime 2000 `
         -command "bash $($REMOTE_SCRIPT) --log_dir '/root/LongPerfStressTest' --config 'server' --client_ip '$($clientVMData.InternalIP)'" -runAsSudo

@@ -15,7 +15,7 @@
 # must log its output to a different directory.
 #
 
-HOMEDIR="/root"
+HOMEDIR=$(pwd)
 LogMsg()
 {
 	echo "[$(date +"%x %r %Z")] ${1}"

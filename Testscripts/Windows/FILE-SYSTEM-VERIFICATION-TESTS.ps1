@@ -64,18 +64,18 @@ function New-FileShare {
     Add-Content -Value "SCRATCH_DEV=//$url_scratch" -Path $xfstestsConfig
 
     # Add new info in constants.sh
-    $cmdToSend = "sed -i '/TEST_FS_MOUNT_OPTS/d' /$superuser/constants.sh; echo 'share_user=`"$storageAccountName`"' >> /$superuser/constants.sh"
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command $cmdToSend | Out-Null
-        $cmdToSend = "sed -i '/MOUNT_OPTIONS/d' /$superuser/constants.sh; echo 'share_scratch=`"$url_scratch`"' >> /$superuser/constants.sh"
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command $cmdToSend | Out-Null
-    $cmdToSend = "echo 'share_main=`"$url_main`"' >> /$superuser/constants.sh; echo 'share_pass=`"$sharePassword`"' >> /$superuser/constants.sh"
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command $cmdToSend | Out-Null
-    $cmdToSend = "echo 'fstab_info=`"nofail,vers=3.0,credentials=/etc/smbcredentials/lisav2.cred,dir_mode=0777,file_mode=0777,serverino`"' >> /$superuser/constants.sh"
-    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-        -password $password -command $cmdToSend | Out-Null
+    $cmdToSend = "sed -i '/TEST_FS_MOUNT_OPTS/d' constants.sh; echo 'share_user=`"$storageAccountName`"' >> constants.sh"
+    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+        -password $password -command $cmdToSend -runAsSudo | Out-Null
+        $cmdToSend = "sed -i '/MOUNT_OPTIONS/d' constants.sh; echo 'share_scratch=`"$url_scratch`"' >> constants.sh"
+    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+        -password $password -command $cmdToSend -runAsSudo | Out-Null
+    $cmdToSend = "echo 'share_main=`"$url_main`"' >> constants.sh; echo 'share_pass=`"$sharePassword`"' >> constants.sh"
+    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+        -password $password -command $cmdToSend -runAsSudo | Out-Null
+    $cmdToSend = "echo 'fstab_info=`"nofail,vers=3.0,credentials=/etc/smbcredentials/lisav2.cred,dir_mode=0777,file_mode=0777,serverino`"' >> constants.sh"
+    Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+        -password $password -command $cmdToSend -runAsSudo | Out-Null
 
     return 0
 }
@@ -88,12 +88,11 @@ function Main {
     # Create test result
     $currentTestResult = Create-TestResultObject
     $resultArr = @()
-    $superuser = "root"
 
     try {
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+        Provision-VMsForLisa -allVMData $allVMData
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
-            -files $currentTestData.files -username $superuser -password $password -upload
+            -files $currentTestData.files -username $user -password $password -upload
 
         # Construct xfstesting config file
         $xfstestsConfig = Join-Path $env:TEMP "xfstests-config.config"
@@ -118,9 +117,11 @@ function Main {
 
         # Start the test script
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
-            -files $xfstestsConfig -username $superuser -password $password -upload
-        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-            -password $password -command "/$superuser/xfstesting.sh" -RunInBackground | Out-Null
+            -files $xfstestsConfig -username $user -password $password -upload
+        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+            -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo | Out-Null
+        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user `
+            -password $password -command "ssh $(($AllVmData).InternalIP) 'bash /root/xfstesting.sh'" -RunInBackground -runAsSudo | Out-Null
         # Check the status of the run every minute
         # If the run is longer than 4 hours, abort the test
         $timeout = New-Timespan -Minutes 240
@@ -130,7 +131,7 @@ function Main {
             $tcpTestResult = (Test-NetConnection -ComputerName $allVMData.PublicIP -Port $allVMData.SSHPort).TcpTestSucceeded
             if ($tcpTestResult) {
                 $state = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username $superuser -password $password "cat state.txt"
+                -username $user -password $password "cat /root/state.txt" -runAsSudo
                 if ($state -eq "TestCompleted") {
                     Write-LogInfo "xfstesting.sh finished the run successfully!"
                     break
@@ -156,8 +157,7 @@ function Main {
         #####
         # We first need to move copy from root folder to user folder for
         # Collect-TestLogs function to work
-        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $superuser `
-            -password $password -command "cp * /home/$user" -ignoreLinuxExitCode:$true | Out-Null
+        Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort -username $user -password $password -command "chown $user /root; cp /root/* ." -runAsSudo -ignoreLinuxExitCode | Out-Null
         $testResult = Collect-TestLogs -LogsDestination $LogDir -ScriptName `
             $currentTestData.files.Split('\')[3].Split('.')[0] -TestType "sh"  -PublicIP `
             $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $user `

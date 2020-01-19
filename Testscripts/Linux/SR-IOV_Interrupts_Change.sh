@@ -138,7 +138,7 @@ get_interrupts_per_vcpu "1"
 
 # Start iPerf3 to force the interrupt count to increase
 LogMsg "------------ Running iPerf3 for 10 minutes ------------"
-ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$VF_IP2" "nohup $iperf3_cmd -s > /dev/null 2>&1 &"
+ssh "$remote_user"@"$VF_IP2" "nohup $iperf3_cmd -s > /dev/null 2>&1 &"
 sleep 5
 $iperf3_cmd -t 600 -c $VF_IP2 -P 128
 if [ $? -eq 0 ]; then

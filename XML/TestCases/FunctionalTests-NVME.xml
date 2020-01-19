@@ -113,7 +113,7 @@
     <test>
         <TestName>NVME-FILE-SYSTEM-VERIFICATION-GENERIC</TestName>
         <TestScript>FILE-SYSTEM-VERIFICATION-TESTS.ps1</TestScript>
-        <files>.\Testscripts\Linux\xfstesting.sh</files>
+        <files>.\Testscripts\Linux\xfstesting.sh,.\Testscripts\Linux\utils.sh</files>
         <setupType>OneVM</setupType>
         <OverrideVMSize>Standard_L8s_v2</OverrideVMSize>
         <TestParameters>
@@ -133,7 +133,7 @@
     <test>
         <TestName>NVME-FILE-SYSTEM-VERIFICATION-XFS</TestName>
         <TestScript>FILE-SYSTEM-VERIFICATION-TESTS.ps1</TestScript>
-        <files>.\Testscripts\Linux\xfstesting.sh</files>
+        <files>.\Testscripts\Linux\xfstesting.sh,.\Testscripts\Linux\utils.sh</files>
         <setupType>OneVM</setupType>
         <OverrideVMSize>Standard_L8s_v2</OverrideVMSize>
         <TestParameters>
@@ -152,7 +152,7 @@
     <test>
         <TestName>NVME-FILE-SYSTEM-VERIFICATION-EXT4</TestName>
         <TestScript>FILE-SYSTEM-VERIFICATION-TESTS.ps1</TestScript>
-        <files>.\Testscripts\Linux\xfstesting.sh</files>
+        <files>.\Testscripts\Linux\xfstesting.sh,.\Testscripts\Linux\utils.sh</files>
         <setupType>OneVM</setupType>
         <OverrideVMSize>Standard_L8s_v2</OverrideVMSize>
         <TestParameters>
@@ -172,7 +172,7 @@
     <test>
         <TestName>NVME-FILE-SYSTEM-VERIFICATION-BTRFS</TestName>
         <TestScript>FILE-SYSTEM-VERIFICATION-TESTS.ps1</TestScript>
-        <files>.\Testscripts\Linux\xfstesting.sh</files>
+        <files>.\Testscripts\Linux\xfstesting.sh,.\Testscripts\Linux\utils.sh</files>
         <setupType>OneVM</setupType>
         <OverrideVMSize>Standard_L8s_v2</OverrideVMSize>
         <TestParameters>

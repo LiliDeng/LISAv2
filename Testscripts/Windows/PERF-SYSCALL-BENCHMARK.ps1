@@ -18,11 +18,10 @@ function Main {
 
     try {
         $testVMData = $allVMData
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
-        $superUser = "root"
+        Provision-VMsForLisa -allVMData $allVMData
 
         $myString = @"
-# cd /root/
+cd /root/
 chmod +x perf_syscallbenchmark.sh
 ./perf_syscallbenchmark.sh &> syscallConsoleLogs.txt
 . utils.sh
@@ -30,20 +29,21 @@ collect_VM_properties
 "@
 
         Set-Content "$LogDir\StartSysCallBenchmark.sh" $myString
-        Copy-RemoteFiles -uploadTo $testVMData.PublicIP -port $testVMData.SSHPort -files "$LogDir\StartSysCallBenchmark.sh" -username $superUser -password $password -upload
-        Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -command "chmod +x *.sh" | Out-Null
-        $testJob = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -command "./StartSysCallBenchmark.sh" -RunInBackground
+        Copy-RemoteFiles -uploadTo $testVMData.PublicIP -port $testVMData.SSHPort -files "$LogDir\StartSysCallBenchmark.sh" -username $user -password $password -upload
+        Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo | Out-Null
+        $testJob = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -command "bash StartSysCallBenchmark.sh" -RunInBackground -runAsSudo
         #endregion
 
         #region MONITOR TEST
         while ((Get-Job -Id $testJob).State -eq "Running") {
-            $currentStatus = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -command "tail -1 syscallConsoleLogs.txt"
+            $currentStatus = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -command "tail -1 /root/syscallConsoleLogs.txt" -runAsSudo
             Write-LogInfo "Current Test Status : $currentStatus"
             Wait-Time -seconds 20
         }
 
-        $finalStatus = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -command "cat state.txt"
-        Copy-RemoteFiles -downloadFrom $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -download -downloadTo $LogDir -files "*.txt,*.log,*.csv"
+        $finalStatus = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -command "cat /root/state.txt" -runAsSudo
+        $null = Run-LinuxCmd -ip $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -command "chown ${user} /root/*; cp /root/* ." -ignoreLinuxExitCode -runAsSudo
+        Copy-RemoteFiles -downloadFrom $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "*.txt,*.log,*.csv"
         $testSummary = $null
         #endregion
 
@@ -54,7 +54,7 @@ collect_VM_properties
             Write-LogErr "Test Aborted. Last known status : $currentStatus."
             $testResult = "ABORTED"
         } elseif ($finalStatus -imatch "TestCompleted") {
-            Copy-RemoteFiles -downloadFrom $testVMData.PublicIP -port $testVMData.SSHPort -username $superUser -password $password -download -downloadTo $LogDir -files "syscall-benchmark-*.tar.gz"
+            Copy-RemoteFiles -downloadFrom $testVMData.PublicIP -port $testVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "syscall-benchmark-*.tar.gz"
             Write-LogInfo "Test Completed."
             $testResult = "PASS"
             try {

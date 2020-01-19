@@ -9,9 +9,9 @@ trap '' HUP
 HOMEDIR=$(pwd)
 # Source utils.sh
 . utils.sh || {
-	echo "ERROR: unable to source utils.sh!"
-	echo "TestAborted" > state.txt
-	exit 0
+    echo "ERROR: unable to source utils.sh!"
+    echo "TestAborted" > state.txt
+    exit 0
 }
 
 RAID_SETUP_SCRIPT="./CreateRaid.sh"
@@ -30,7 +30,7 @@ function start_logging {
     config="$1"
     remote_ip="$2"
     log_dir="$3"
-    
+
     export S_TIME_FORMAT="ISO"
 
     if [[ $config == "server" ]];then
@@ -49,7 +49,7 @@ function start_logging {
     elif [[ $config == "client" ]];then
         nohup ntttcp -s"$remote_ip" -P 16 -n 4 -l 1 -t 0 > "${log_dir}/ntttcp-client.log" &
     fi
-    
+
     # Start monitoring tools
     nohup mpstat -P ALL 10 | append_date > "${log_dir}/mpstat_${config}.log" &
     nohup sar -n DEV 10 | append_date > "${log_dir}/sar_${config}.log" &
@@ -75,7 +75,7 @@ function main {
             *) break ;;
         esac
     done
-    
+
     if [[ $CONFIG == "server" && $CLIENT_IP == "" ]] || [[ $CONFIG == "client" && $SERVER_IP == "" ]];then
         LogErr "IP missing for config: $CONFIG"
         SetTestStateAborted
@@ -86,19 +86,19 @@ function main {
     elif [[ $CONFIG == "client" ]];then
         remote_ip="$SERVER_IP"
     fi
-    
+
     if [[ -d "$LOG_DIR" ]];then
         rm -rf "$LOG_DIR"
     fi
     mkdir $LOG_DIR
-    
+
     update_repos
     install_package make gcc sysbench sysstat
-    
+
     build_ntttcp
-    
+
     cd $HOMEDIR
-    
+
     if [[ $CONFIG == "server" ]];then
         if [[ ! -e $RAID_SETUP_SCRIPT ]];then
             LogErr "Cannot find raid setup script"
@@ -109,9 +109,8 @@ function main {
         
         bash $RAID_SETUP_SCRIPT
     fi
-    
+
     start_logging "$CONFIG" "$remote_ip" "$LOG_DIR"
-    
 }
 
 main $@

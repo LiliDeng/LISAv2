@@ -4,31 +4,29 @@ param([object] $AllVmData,
 	  [object] $CurrentTestData)
 
 function Invoke-DpdkTestPmd {
-	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "./StartDpdkTestPmd.sh" -RunInBackground
+	$testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "bash StartDpdkTestPmd.sh" -RunInBackground -runAsSudo
 
 	#region MONITOR TEST
 	while ((Get-Job -Id $testJob).State -eq "Running") {
-		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "tail -2 dpdkConsoleLogs.txt | head -1"
+		$currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "tail -2 /root/dpdkConsoleLogs.txt | head -1" -runAsSudo
 		Write-LogInfo "Current Test Status : $currentStatus"
 		Wait-Time -seconds 20
 	}
-	$finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "cat /root/state.txt"
-	Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -download -downloadTo $currentDir -files "*.csv, *.txt, *.log"
+	$finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "cat /root/state.txt" -runAsSudo
+	Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown ${user} /root/*; cp /root/* ." -runAsSudo -ignoreLinuxExitCode | out-null
+	Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $currentDir -files "*.csv, *.txt, *.log"
 
 	if ($finalStatus -imatch "TestFailed") {
 		Write-LogErr "Test failed. Last known status : $currentStatus."
 		$testResult = "FAIL"
-	}
-	elseif ($finalStatus -imatch "TestAborted") {
+	} elseif ($finalStatus -imatch "TestAborted") {
 		Write-LogErr "Test Aborted. Last known status : $currentStatus."
 		$testResult = "ABORTED"
-	}
-	elseif ($finalStatus -imatch "TestCompleted") {
+	} elseif ($finalStatus -imatch "TestCompleted") {
 		Write-LogInfo "Test Completed."
 		$testResult = "PASS"
-		Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -download -downloadTo $currentDir -files "*.tar.gz"
-	}
-	elseif ($finalStatus -imatch "TestRunning") {
+		Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $currentDir -files "*.tar.gz"
+	} elseif ($finalStatus -imatch "TestRunning") {
 		Write-LogInfo "Powershell background job for test is completed but VM is reporting that test is still running. Please check $LogDir\zkConsoleLogs.txt"
 		Write-LogInfo "Content of summary.log : $testSummary"
 		$testResult = "PASS"
@@ -42,7 +40,6 @@ function Invoke-DpdkTestPmd {
 }
 function Main {
 	# Create test result
-	$superUser = "root"
 	$resultArr = @()
 	$lowerbound = 1000000
 	$currentTestResult = Create-TestResultObject
@@ -53,8 +50,7 @@ function Main {
 			if ($vmData.RoleName -imatch "client") {
 				$clientVMData = $vmData
 				$noClient = $false
-			}
-			elseif ($vmData.RoleName -imatch "server") {
+			} elseif ($vmData.RoleName -imatch "server") {
 				$noServer = $false
 				$serverVMData = $vmData
 			} else {
@@ -80,13 +76,13 @@ function Main {
 		Write-LogInfo "  Internal IP : $($serverVMData.InternalIP)"
 
 		# PROVISION VMS FOR LISA WILL ENABLE ROOT USER AND WILL MAKE ENABLE PASSWORDLESS AUTHENTICATION ACROSS ALL VMS IN SAME HOSTED SERVICE.
-		Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+		Provision-VMsForLisa -allVMData $allVMData
 		#endregion
 
 		Write-LogInfo "Getting Active NIC Name."
 		$getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
-		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
-		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $superUser -password $password -command $getNicCmd).Trim()
+		$clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
+		$serverNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $serverVMData.SSHPort -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
 		if ($serverNicName -eq $clientNicName) {
 			Write-LogInfo "Client and Server VMs have same nic name: $clientNicName"
 		} else {
@@ -116,7 +112,7 @@ function Main {
 			}
 		}
 		$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort `
-				-username $user -password $password -command "uname -r"
+				-username $user -password $password -command "uname -r" -runAsSudo
 		if (Is-DpdkCompatible -KernelVersion $currentKernelVersion -DetectedDistro $global:DetectedDistro) {
 			Write-LogInfo "Confirmed Kernel version supported: $currentKernelVersion"
 		} else {
@@ -137,9 +133,10 @@ cd /root/
 collect_VM_properties
 "@
 		Set-Content "$LogDir\StartDpdkTestPmd.sh" $myString
-		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\StartDpdkTestPmd.sh" -username $superUser -password $password -upload
-		$null = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $superUser -password $password -command "chmod +x *.sh" | Out-Null
-
+		Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\StartDpdkTestPmd.sh" -username $user -password $password -upload
+		foreach ($vmData in $allVMData) {
+			Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+		}
 		$currentDir = "$LogDir\initialSRIOVTest"
 		New-Item -Path $currentDir -ItemType Directory | Out-Null
 		$initailTest = Invoke-DpdkTestPmd

@@ -36,11 +36,6 @@ if [ "${STATIC_IP2:-UNDEFINED}" = "UNDEFINED" ]; then
     SetTestStateAborted
     exit 0
 fi
-if [ "${SSH_PRIVATE_KEY:-UNDEFINED}" = "UNDEFINED" ]; then
-    LogErr "The test parameter SSH_PRIVATE_KEY is not defined in constants file"
-    SetTestStateAborted
-    exit 0
-fi
 if [ "${NETMASK:-UNDEFINED}" = "UNDEFINED" ]; then
     LogMsg "The test parameter NETMASK is not defined in constants file . Defaulting to 255.255.255.0"
     NETMASK=255.255.255.0
@@ -132,14 +127,14 @@ LogMsg "Enough free space locally to create the file"
 
 # Check disk size on remote vm. Cannot use IsFreeSpace function directly. Need to export utils.sh to the remote_vm, source it and then access the functions therein
 LogMsg "Checking for disk space on $STATIC_IP2"
-scp -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no utils.sh "$remote_user"@"$STATIC_IP2":/tmp
+scp utils.sh "$remote_user"@"$STATIC_IP2":/tmp
 if [ 0 -ne $? ]; then
     LogMsg "Cannot copy utils.sh to $STATIC_IP2:/tmp"
     SetTestStateFailed
     exit 0
 fi
 
-remote_home=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "
+remote_home=$(ssh "$remote_user"@"$STATIC_IP2" "
     . /tmp/utils.sh
     IsFreeSpace \"\$HOME\" $file_size
     if [ 0 -ne \$? ]; then
@@ -204,7 +199,7 @@ fi
 # If SSH_PRIVATE_KEY was specified, ssh into the STATIC_IP2 and set the MTU of all interfaces to $max_mtu
 # If not, assume that it was already set.
 LogMsg "Setting all interfaces on $STATIC_IP2 mtu to $max_mtu"
-ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" "
+ssh "$remote_user"@"$STATIC_IP2" "
     remote_interface=\$(ip -o addr show | grep \"$STATIC_IP2\" | cut -d ' ' -f2)
     if [ x\"\$remote_interface\" = x ]; then
         exit 1
@@ -233,7 +228,7 @@ fi
 
 # Send file to remote_vm
 expect -c "
-    spawn scp -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" "$output_file" "$remote_user"@"$STATIC_IP2":"$remote_home"/"$output_file"
+    spawn scp "$output_file" "$remote_user"@"$STATIC_IP2":"$remote_home"/"$output_file"
     expect -timeout -1 \"stalled\" {close}
     interact
 " > expect.log
@@ -245,7 +240,7 @@ expect -c "
 LogMsg "Successfully sent $output_file to $STATIC_IP2:$remote_home/$output_file"
 
 # Compute md5sum of remote file
-remote_md5sum=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$STATIC_IP2" md5sum $output_file | cut -f 1 -d ' ')
+remote_md5sum=$(ssh "$remote_user"@"$STATIC_IP2" md5sum $output_file | cut -f 1 -d ' ')
 if [ "$local_md5sum" != "$remote_md5sum" ]; then
     [ $NO_DELETE -eq 0 ] && rm -f "$HOME"/$output_file
     LogErr "md5sums differ. Files do not match"

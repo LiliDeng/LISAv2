@@ -11,12 +11,12 @@ function Run-TestScript ($ip, $port, $testScript)
 {
     Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "chmod a+x *.sh" -runAsSudo
     Write-LogInfo "Executing : ${testScript}"
-    $cmd = "bash /home/$user/${testScript}"
+    $cmd = "bash ${testScript}"
     Write-Debug "Commands: $cmd"
     $testJob = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command $cmd -runAsSudo -RunInBackground
     $timeCount = 0
     while ((Get-Job -Id $testJob).State -eq "Running") {
-        $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt" -runAsSudo
+        $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat state.txt" -runAsSudo
         Write-LogInfo "Current test status : $currentStatus"
         Wait-Time -seconds 30
         $timeCount += 30
@@ -24,7 +24,7 @@ function Run-TestScript ($ip, $port, $testScript)
             break
         }
     }
-    $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat /home/$user/state.txt" -runAsSudo
+    $currentStatus = Run-LinuxCmd -username $user -password $password -ip $ip -port $port -command "cat state.txt" -runAsSudo
     return $currentStatus
 }
 
@@ -40,7 +40,7 @@ function Main {
     $resultArr = @()
 
     try {
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+        Provision-VMsForLisa -allVMData $allVMData
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
             -files $currentTestData.files -username $user -password $password -upload | Out-Null
 

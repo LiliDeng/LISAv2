@@ -133,7 +133,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Install iPerf3
-ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$VF_IP2" ". $HOME/utils.sh && update_repos && install_package iperf3"
+ssh "$remote_user"@"$VF_IP2" ". $HOME/utils.sh && update_repos && install_package iperf3"
 if [ $? -ne 0 ]; then
     LogErr "Could not install iPerf3 on VM2 (VF_IP: ${VF_IP2})"
     SetTestStateFailed
@@ -144,7 +144,7 @@ update_repos
 install_package iperf3
 
 # Start iPerf server on dependency VM
-ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$VF_IP2" 'iperf3 -s > perfResults.log &'
+ssh "$remote_user"@"$VF_IP2" 'iperf3 -s > perfResults.log &'
 if [ $? -ne 0 ]; then
     LogErr "Could not start iPerf3 on VM2 (VF_IP: ${VF_IP2})"
     SetTestStateFailed

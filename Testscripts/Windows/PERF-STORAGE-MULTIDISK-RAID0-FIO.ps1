@@ -34,11 +34,11 @@ collect_VM_properties
 "@
         $parsePerfResultsCode = @"
 chmod +x *.sh
-cp fio_jason_parser.sh gawk JSON.awk utils.sh /root/FIOLog/jsonLog/
-cd /root/FIOLog/jsonLog/
+cp fio_jason_parser.sh gawk JSON.awk utils.sh ./FIOLog/jsonLog/
+pushd ./FIOLog/jsonLog/
 ./fio_jason_parser.sh
-cp perf_fio.csv /root
-chmod 666 /root/perf_fio.csv
+popd
+cp ./FIOLog/jsonLog/perf_fio.csv .
 "@
     return @{
         "run_perf" = $runPerfCode;
@@ -215,7 +215,6 @@ function Main {
     )
 
     try {
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
         New-ConstantsFile -LogDir $LogDir -CurrentTestData $CurrentTestData
 
         Write-LogInfo "Starting test..."
@@ -224,13 +223,13 @@ function Main {
         Set-Content "$LogDir\ParseFioTestLogs.sh" $linuxPerfCode["parse_perf_results"]
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
             -files "$constantsFile,$LogDir\StartFioTest.sh,$LogDir\ParseFioTestLogs.sh" `
-            -username "root" -password $password -upload
+            -username $user -password $password -upload
         Copy-RemoteFiles -uploadTo $allVMData.PublicIP -port $allVMData.SSHPort `
-            -files $currentTestData.files -username "root" -password $password -upload
+            -files $currentTestData.files -username $user -password $password -upload
         $null = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-            -username "root" -password $password -command "chmod +x *.sh" -runAsSudo
+            -username $user -password $password -command "chmod +x *.sh" -runAsSudo
         $testJob = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-            -username "root" -password $password -command "bash StartFioTest.sh" `
+            -username $user -password $password -command "bash StartFioTest.sh" `
             -RunInBackground -runAsSudo
 
         Write-LogInfo "Monitoring test run..."
@@ -238,7 +237,7 @@ function Main {
         $MaxFioStuckAttempts = 10
         while ((Get-Job -Id $testJob).State -eq "Running") {
             $currentStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username "root" -password $password -command "tail -1 fioConsoleLogs.txt" `
+                -username $user -password $password -command "tail -1 fioConsoleLogs.txt" `
                 -runAsSudo
             Write-LogInfo "Current Test Status: $currentStatus"
             if ($currentStatus -imatch "Doing forceful exit of this job") {
@@ -255,7 +254,7 @@ function Main {
 
         Write-LogInfo "Checking test run status..."
         $finalStatus = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-            -username "root" -password $password -command "cat state.txt"
+            -username $user -password $password -command "cat state.txt" -runAsSudo
         if ($finalStatus -imatch "TestFailed") {
             Write-LogErr "Test failed. Last known status : $currentStatus."
             $testResult = "FAIL"
@@ -263,15 +262,24 @@ function Main {
             Write-LogErr "Test Aborted. Last known status : $currentStatus."
             $testResult = "ABORTED"
         } elseif ($finalStatus -imatch "TestCompleted") {
+            Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
+                -username $user -password $password -command "chown ${user} /root/*; cp /root/* ." `
+                -runAsSudo -ignoreLinuxExitCode
             Copy-RemoteFiles -downloadFrom $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username "root" -password $password -download -downloadTo $LogDir -files "FIOTest-*.tar.gz"
+                -username $user -password $password -download -downloadTo $LogDir -files "FIOTest-*.tar.gz"
             Copy-RemoteFiles -downloadFrom $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username "root" -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
+                -username $user -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
+            Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
+                -username $user -password $password -command "cp -R /root/FIOLog ." `
+                -runAsSudo -ignoreLinuxExitCode | Out-Null
             $null = Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username "root" -password $password -command "/root/ParseFioTestLogs.sh" `
-                -runMaxAllowedTime $TestParams.parseTimeout
+                -username $user -password $password -command "bash ParseFioTestLogs.sh" `
+                -runMaxAllowedTime $TestParams.parseTimeout -runAsSudo
+            Run-LinuxCmd -ip $allVMData.PublicIP -port $allVMData.SSHPort `
+                -username $user -password $password -command "chown ${user} perf_fio.csv" `
+                -runAsSudo -ignoreLinuxExitCode | Out-Null
             Copy-RemoteFiles -downloadFrom $allVMData.PublicIP -port $allVMData.SSHPort `
-                -username "root" -password $password -download -downloadTo $LogDir `
+                -username $user -password $password -download -downloadTo $LogDir `
                 -files "perf_fio.csv"
             $testResult = "PASS"
         } elseif ($finalStatus -imatch "TestRunning") {

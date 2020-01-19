@@ -45,23 +45,23 @@ function Main {
         Write-LogInfo "  SSH Port : $($serverVMData.SSHPort)"
 
         # PROVISION VMS FOR LISA WILL ENABLE ROOT USER AND WILL MAKE ENABLE PASSWORDLESS AUTHENTICATION ACROSS ALL VMS IN SAME HOSTED SERVICE.
-        Provision-VMsForLisa -allVMData $allVMData -installPackagesOnRoleNames "none"
+        Provision-VMsForLisa -allVMData $allVMData
         #endregion
 
         Write-LogInfo "Getting Active NIC Name."
         if ($TestPlatform -eq "Azure") {
             $getNicCmd = ". ./utils.sh &> /dev/null && get_active_nic_name"
             $clientNicName = (Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort `
-                -username "root" -password $password -command $getNicCmd).Trim()
+                -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
             $serverNicName = (Run-LinuxCmd -ip $serverVMData.PublicIP -port $serverVMData.SSHPort `
-                -username "root" -password $password -command $getNicCmd).Trim()
+                -username $user -password $password -command $getNicCmd -runAsSudo).Trim()
         } elseif ($TestPlatform -eq "HyperV") {
             $clientNicName = Get-GuestInterfaceByVSwitch $TestParams.PERF_NIC $clientVMData.RoleName `
                 $clientVMData.HypervHost $user $clientVMData.PublicIP $password $clientVMData.SSHPort
             $serverNicName = Get-GuestInterfaceByVSwitch $TestParams.PERF_NIC $serverVMData.RoleName `
                 $serverVMData.HypervHost $user $serverVMData.PublicIP $password $serverVMData.SSHPort
         }
-        if ( $serverNicName -eq $clientNicName) {
+        if ($serverNicName -eq $clientNicName) {
             Write-LogInfo "Server and client SRIOV NICs are the same."
         } else {
             Throw "Server and client SRIOV NICs are not same."
@@ -100,26 +100,29 @@ cd /root/
 collect_VM_properties
 "@
         Set-Content "$LogDir\Startiperf3udpTest.sh" $myString
-        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\Startiperf3udpTest.sh" -username "root" -password $password -upload
-        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files $currentTestData.files -username "root" -password $password -upload
+        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files "$constantsFile,$LogDir\Startiperf3udpTest.sh" -username $user -password $password -upload
+        Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files $currentTestData.files -username $user -password $password -upload
 
-        $null = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "chmod +x *.sh"
-        $testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "/root/Startiperf3udpTest.sh" -RunInBackground
+        foreach ($vmData in $allVMData) {
+            Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh; cp * /root/" -runAsSudo
+        }
+        $testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "bash Startiperf3udpTest.sh" -RunInBackground -runAsSudo
         #endregion
 
         #region MONITOR TEST
         while ((Get-Job -Id $testJob).State -eq "Running") {
-            $currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "tail -1 iperf3udpConsoleLogs.txt"
+            $currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "tail -1 /root/iperf3udpConsoleLogs.txt" -runAsSudo
             Write-LogInfo "Current Test Status : $currentStatus"
             Wait-Time -seconds 20
         }
-        $finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "cat /root/state.txt"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "/root/iperf3udpConsoleLogs.txt"
+        $finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "cat /root/state.txt" -runAsSudo
+        Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -command "chown ${user} /root; cp /root/* ." -runAsSudo -ignoreLinuxExitCode
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "iperf3udpConsoleLogs.txt"
         $iperf3LogDir = "$LogDir\iperf3Data"
         New-Item -itemtype directory -path $iperf3LogDir -Force -ErrorAction SilentlyContinue | Out-Null
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $iperf3LogDir -files "iperf-client-udp*"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $iperf3LogDir -files "iperf-server-udp*"
-        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $iperf3LogDir -files "iperf-client-udp*"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $iperf3LogDir -files "iperf-server-udp*"
+        Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username $user -password $password -download -downloadTo $LogDir -files "VM_properties.csv"
 
         $testSummary = $null
 
