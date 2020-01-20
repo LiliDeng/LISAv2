@@ -142,11 +142,11 @@ function Install_Dpdk_Dependencies() {
 		SetTestStateAborted
 		exit 1
 	fi
-	if [ $? -ne 0 ]; then
-		LogErr "ERROR: Failed to install required packages on distro ${distro}"
-		SetTestStateFailed
-		exit 1
-	fi
+	#if [ $? -ne 0 ]; then
+	#	LogErr "ERROR: Failed to install required packages on distro ${distro}"
+	#	SetTestStateFailed
+	#	exit 1
+	#fi
 }
 
 function Install_Dpdk () {
