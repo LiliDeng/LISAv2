@@ -166,7 +166,6 @@ function Install_Dpdk () {
 		oracle|rhel|centos)
 			ssh "${1}" ". utils.sh && install_epel"
 			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
-			check_exit_status "Install Infiniband Support on ${1}" "exit"
 			ssh "${1}" "grep 7.5 /etc/redhat-release && curl https://partnerpipelineshare.blob.core.windows.net/kernel-devel-rpms/CentOS-Vault.repo > /etc/yum.repos.d/CentOS-Vault.repo"
 			packages+=(kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel)
 			check_package "libmnl-devel"
