@@ -73,7 +73,7 @@ function Main() {
 			install_package $supplement_pkg
 			# required dependencies
 			req_pkg="kernel-devel-$(uname -r) valgrind-devel redhat-rpm-config rpm-build gcc gcc-gfortran libdb-devel gcc-c++ glibc-devel zlib-devel numactl-devel libmnl-devel binutils-devel iptables-devel libstdc++-devel libselinux-devel elfutils-devel libtool libnl3-devel java libstdc++.i686 gtk2 atk cairo tcl tk createrepo byacc.x86_64 net-tools kernel-rpm-macros tcsh"
-			install_package $req_pkg
+			yum install -y  $req_pkg
 			LogMsg "$?: Installed required packages $req_pkg"
 			# libibverbs-devel and libibmad-devel have broken dependencies on Centos 7.6
 			# Switching to direct install instead of using the function
@@ -94,32 +94,32 @@ function Main() {
 				;;
 			esac
 			yum -y groupinstall "InfiniBand Support"
-			Verify_Result
+			#Verify_Result
 			LogMsg "Installed InfiniBand Support"
 
 			LogMsg "Completed the required packages installation"
 
 			LogMsg "Enabling rdma service"
 			systemctl enable rdma
-			Verify_Result
+			#Verify_Result
 			LogMsg "Enabled rdma service"
 			sleep 5
 
 			# Restart IB driver after enabling the eIPoIB Driver
 			LogMsg "Changing LOAD_EIPOIB to yes"
 			sed -i -e 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
-			Verify_Result
+			#Verify_Result
 			LogMsg "Configured openib.conf file"
 
 			LogMsg "Unloading ib_isert rpcrdma ib_Srpt services"
 			modprobe -rv ib_isert rpcrdma ib_srpt
-			Verify_Result
+			#Verify_Result
 			LogMsg "Removed ib_isert rpcrdma ib_srpt services"
 			sleep 1
 
 			LogMsg "Restarting openibd service"
 			/etc/init.d/openibd restart
-			Verify_Result
+			#Verify_Result
 			LogMsg "Restarted Open IB Driver"
 			# Ignore the openibd service restart. Known issue in Mellanox 773774
 			# VM will reboot later and resolve automatically.
@@ -130,15 +130,15 @@ function Main() {
 			systemctl disable iptables.service
 			systemctl mask firewalld
 			systemctl stop firewalld.service
-			Verify_Result
+			#Verify_Result
 			LogMsg "Stopped firewall service"
 			systemctl disable firewalld.service
 			Verify_Result
 			LogMsg "Disabled firewall service"
 			iptables -nL
-			Verify_Result
+			#Verify_Result
 			sed -i -e 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
-			Verify_Result
+			#Verify_Result
 			LogMsg "Completed RHEL Firewall and SELinux disabling"
 			;;
 		suse*|sles*)
