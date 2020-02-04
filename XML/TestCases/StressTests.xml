@@ -153,6 +153,23 @@
 		<Priority>2</Priority>
 	</test>
 	<test>
+		<testName>STRESSNG-TEST</testName>
+		<testScript>STRESSNG-TEST.ps1</testScript>
+		<setupType>OneVM</setupType>
+		<OverrideVMSize>Standard_DS4_v2</OverrideVMSize>
+		<setupScript></setupScript>
+		<files>.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\stress_ng.sh</files>
+		<TestParameters>
+			<param>stressng_version=STRESSNG_GIT_TAG</param>
+		</TestParameters>
+		<cleanupScript></cleanupScript>
+		<Platform>Azure</Platform>
+		<Category>Stress</Category>
+		<Area>STRESS</Area>
+		<Tags>stress</Tags>
+		<Priority>2</Priority>
+	</test>
+	<test>
 		<testName>STRESS-STORAGE-4K-IO-WITHVERIFY</testName>
 		<testScript>PERF-STORAGE-MULTIDISK-RAID0-FIO.ps1</testScript>
 		<setupType>OneVM12Disk</setupType>

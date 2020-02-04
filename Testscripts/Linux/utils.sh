@@ -3384,3 +3384,25 @@ function get_OSdisk() {
 
 	echo "$os_disk"
 }
+
+function build_stressng () {
+	stressng_version="V0.10.18"
+	# If the stressng version is provided in xml then it will go for that version, otherwise default to V0.10.18.
+	if [ "${1}" ]; then
+		stressng_version=${1}
+	fi
+	git clone https://github.com/ColinIanKing/stress-ng
+	pushd stress-ng
+	if [ $stressng_version != "master" ]; then
+		git checkout $stressng_version
+	fi
+	make && make install
+	popd
+}
+
+function install_stressng () {
+	LogMsg "Detected $DISTRO_NAME $DISTRO_VERSION; installing required packages of stressng"
+	update_repos
+	install_package "git make gcc"
+	build_stressng "${1}"
+}
