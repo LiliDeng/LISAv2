@@ -204,21 +204,6 @@ function Main {
         Write-LogErr "Running KDUMP-Results.sh script failed on VM!"
         return "ABORTED"
     }
-    if ($useNFS -eq "yes") {
-       $cmd = "find /mnt/* -type f -size +10M"
-    } else {
-       $cmd = "find /var/crash/* -type f -size +10M"
-    }
-    $result = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command $cmd -runAsSudo
-    if ($result) {
-        Write-LogInfo "Files found: $result"
-        Write-LogInfo "Test passed: crash file $result is present"
-    } else {
-        Write-LogErr "Not found core file after generate a kernel panic."
-        return "FAIL"
-    }
-
     # Stop NFS server VM
     if ($vm2Name) {
         Stop-VM -VMName $vm2Name -ComputerName $HvServer -Force
