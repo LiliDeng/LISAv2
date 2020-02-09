@@ -187,9 +187,11 @@ function Main {
     # Verifying if the kernel panic process creates a vmcore file of size 10M+
     $retVal = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
                 -command "export HOME=``pwd``;chmod u+x KDUMP-Results.sh && ./KDUMP-Results.sh $vm2ipv4" -runAsSudo
+    $summary = Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
+                -command "cat summary.log" -runAsSudo
+    Write-LogInfo "Result of executing KDUMP-Results.sh - $summary."
     if (-not $retVal) {
         Write-LogErr "Results are not as expected. Check logs for details."
-
         # Stop NFS server VM
         if ($vm2Name) {
             Stop-VM -VMName $vm2Name -ComputerName $HvServer -Force
