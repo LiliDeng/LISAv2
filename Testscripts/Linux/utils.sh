@@ -3101,7 +3101,7 @@ Kill_Process() {
                 ssh $ip "docker stop $pid; docker rm $pid"
             done
         else
-            ssh $ip "killall $2"
+            ssh $ip "pidof $2 && killall $2"
         fi
     done
 }
