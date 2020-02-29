@@ -69,9 +69,9 @@ function Modprobe_Setup() {
 	local modprobe_cmd="modprobe -a ib_uverbs"
 	# known issue on sles15 and ubuntu
 	local distro=$(detect_linux_distribution)$(detect_linux_distribution_version)
-	if [[ "${distro}" == "sles15" || ("${distro}" =~ "ubuntu") ]]; then
-		modprobe_cmd="${modprobe_cmd} mlx4_ib mlx5_ib || true"
-		LogMsg "Loading mlx4_ib and mlx5_ib modules with ib_uverbs module manually for distro: ${distro}"
+	if [[ "${distro}" =~ "sles15" || ("${distro}" =~ "ubuntu") ]]; then
+		modprobe_cmd="${modprobe_cmd} mlx5_en mlx5_core mlx4_en mlx4_core mlx4_ib mlx5_ib || true"
+		LogMsg "Loading mlx4_* and mlx5_* modules with ib_uverbs module manually for distro: ${distro}"
 	fi
 
 	ssh ${1} "${modprobe_cmd}"
@@ -113,7 +113,7 @@ function Install_Dpdk_Dependencies() {
 
 	elif [[ "${distro}" == rhel7* || "${distro}" == centos7* ]]; then
 		ssh ${install_ip} "yum -y --nogpgcheck groupinstall 'Infiniband Support'"
-		ssh ${install_ip} "dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f"
+		ssh ${install_ip} "dracut --add-drivers 'mlx4_en mlx4_ib mlx5_en mlx5_ib' -f"
 		yum_flags=""
 		if [[ "${distro}" == centos7* ]]; then
 			# for all releases that are moved into vault.centos.org
@@ -165,7 +165,7 @@ function Install_Dpdk () {
 	case "${DISTRO_NAME}" in
 		oracle|rhel|centos)
 			ssh "${1}" ". utils.sh && install_epel"
-			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
+			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_en mlx5_ib' -f && systemctl enable rdma"
 			check_exit_status "Install Infiniband Support on ${1}" "exit"
 			ssh "${1}" "(grep 7.5 /etc/redhat-release || grep 7.6 /etc/redhat-release) && curl https://partnerpipelineshare.blob.core.windows.net/kernel-devel-rpms/CentOS-Vault.repo > /etc/yum.repos.d/CentOS-Vault.repo"
 			packages+=(kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel)
