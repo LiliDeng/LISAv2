@@ -6,7 +6,7 @@
 
 HOMEDIR=$(pwd)
 UTIL_FILE="./utils.sh"
-
+DPDK_UTIL_FILE="./dpdkUtils.sh"
 # Source utils.sh
 . utils.sh || {
 	echo "ERROR: unable to source utils.sh!"
@@ -30,7 +30,7 @@ function build_install_rdma_core () {
 			SetTestStateSkipped
 			exit 0
 	esac
-	ssh "${1}" ". ${UTIL_FILE} && CheckInstallLockUbuntu && install_package ${packages[@]}"
+	ssh "${1}" ". ${UTIL_FILE} && CheckInstallLockUbuntu && update_repos && install_package ${packages[@]}"
 
 	sed -i '/deb-src/s/^# //' /etc/apt/sources.list && apt update
 	check_exit_status "enabled apt sources on ${1}" "exit"
