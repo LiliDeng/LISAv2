@@ -156,7 +156,7 @@ function Main {
 				Write-LogInfo "Confirmed Kernel version supported: $currentKernelVersion"
 			} else {
 				Write-LogWarn "Unsupported Kernel version: $currentKernelVersion or unsupported distro $($global:DetectedDistro)"
-				return $global:ResultSkipped
+				#return $global:ResultSkipped
 			}
 		}
 
