@@ -101,11 +101,9 @@ function Install_Dpdk_Dependencies() {
 
 	LogMsg "Detected distro: ${distro}"
 	if [[ "${distro}" == ubuntu* ]]; then
-		apt_packages="librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev"
+		apt_packages="librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev rdma-core"
 		if [[ "${distro}" == "ubuntu16.04" ]]; then
 			ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && add-apt-repository ppa:canonical-server/dpdk-azure -y"
-		else
-			apt_packages="${apt_packages} rdma-core"
 		fi
 
 		ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && update_repos"
