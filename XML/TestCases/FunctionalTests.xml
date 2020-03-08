@@ -1,5 +1,16 @@
 <TestCases>
     <test>
+        <TestName>Collect-Boot-Time</TestName>
+        <testScript>collect_boot_time.sh</testScript>
+        <files>.\TestScripts\Linux\collect_boot_time.sh,.\TestScripts\Linux\utils.sh</files>
+        <setupType>OneVM</setupType>
+        <Platform>Azure,HyperV</Platform>
+        <Category>Functional</Category>
+        <Area>CORE</Area>
+        <Tags>provision</Tags>
+        <Priority>0</Priority>
+    </test>
+    <test>
         <TestName>VERIFY-DEPLOYMENT-PROVISION</TestName>
         <testScript>VERIFY-DEPLOYMENT-PROVISION.ps1</testScript>
         <files></files>
