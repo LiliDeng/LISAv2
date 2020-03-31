@@ -490,7 +490,7 @@
         <testName>PERF-SYSCALL-BENCHMARK</testName>
         <testScript>PERF-SYSCALL-BENCHMARK.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_D15_v2</OverrideVMSize>
+        <OverrideVMSize>Standard_DS15_v2</OverrideVMSize>
         <files>.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\perf_syscallbenchmark.sh</files>
         <TestParameters>
             <param>syscallurl="https://github.com/arkanis/syscall-benchmark.git"</param>
@@ -646,7 +646,7 @@
         <preTestScript>GPU-DRIVER-INSTALL.ps1</preTestScript>
         <testScript>GPU-TENSORFLOW.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NC6</OverrideVMSize>
+        <OverrideVMSize>Standard_NC6s_v2</OverrideVMSize>
         <files>.\Testscripts\Linux\utils.sh,.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\gpu-tensorflow.sh</files>
         <TestParameters>
             <param>CUDADriverVersion="CUDA_DRIVER"</param>

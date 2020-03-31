@@ -550,6 +550,18 @@
         <NumberOfCores>24</NumberOfCores>
         <MemoryInMB>458752</MemoryInMB>
     </Standard_NC24s_v3>
+    <Standard_NV12s_v3>
+        <NumberOfCores>12</NumberOfCores>
+        <MemoryInMB>114688</MemoryInMB>
+    </Standard_NV12s_v3>
+    <Standard_NV24s_v3>
+        <NumberOfCores>24</NumberOfCores>
+        <MemoryInMB>229376</MemoryInMB>
+    </Standard_NV24s_v3>
+    <Standard_NV48s_v3>
+        <NumberOfCores>48</NumberOfCores>
+        <MemoryInMB>458752</MemoryInMB>
+    </Standard_NV48s_v3>
     <Standard_M8-2ms>
         <NumberOfCores>8</NumberOfCores>
         <MemoryInMB>224000</MemoryInMB>

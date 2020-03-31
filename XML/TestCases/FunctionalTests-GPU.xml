@@ -3,7 +3,7 @@
         <testName>NVIDIA-CUDA-DRIVER-VALIDATION</testName>
         <testScript>GPU-DRIVER-INSTALL.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NC6</OverrideVMSize>
+        <OverrideVMSize>Standard_NC6s_v2</OverrideVMSize>
         <files>.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\utils.sh</files>
         <TestParameters>
             <param>CUDADriverVersion="CUDA_DRIVER"</param>
@@ -18,7 +18,7 @@
         <testName>NVIDIA-GRID-DRIVER-VALIDATION</testName>
         <testScript>GPU-DRIVER-INSTALL.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NV6</OverrideVMSize>
+        <OverrideVMSize>Standard_NV12s_v3</OverrideVMSize>
         <files>.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\utils.sh</files>
         <Platform>Azure</Platform>
         <Category>Functional</Category>
@@ -30,7 +30,7 @@
         <testName>NVIDIA-CUDA-DRIVER-VALIDATION-MAX-GPU</testName>
         <testScript>GPU-DRIVER-INSTALL.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NC24</OverrideVMSize>
+        <OverrideVMSize>Standard_NC24s_v2</OverrideVMSize>
         <files>.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\utils.sh</files>
         <TestParameters>
             <param>CUDADriverVersion="CUDA_DRIVER"</param>
@@ -45,7 +45,7 @@
         <testName>NVIDIA-GRID-DRIVER-VALIDATION-MAX-GPU</testName>
         <testScript>GPU-DRIVER-INSTALL.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NV24</OverrideVMSize>
+        <OverrideVMSize>Standard_NV48s_v3</OverrideVMSize>
         <files>.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\utils.sh</files>
         <Platform>Azure</Platform>
         <Category>Functional</Category>
@@ -57,7 +57,7 @@
         <testName>GPU-PCI-RESCIND</testName>
         <testScript>GPU-DRIVER-INSTALL.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_NC6</OverrideVMSize>
+        <OverrideVMSize>Standard_NC6s_v2</OverrideVMSize>
         <files>.\Testscripts\Linux\gpu-driver-install.sh,.\Testscripts\Linux\utils.sh</files>
         <TestParameters>
             <param>CUDADriverVersion="CUDA_DRIVER"</param>

@@ -35,7 +35,7 @@
         <testScript>VERIFY-DEPLOYMENT-PROVISION.ps1</testScript>
         <files></files>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_D13_v2</OverrideVMSize>
+        <OverrideVMSize>Standard_DS13_v2</OverrideVMSize>
         <AdditionalHWConfig>
             <Networking>SRIOV</Networking>
         </AdditionalHWConfig>
@@ -477,7 +477,7 @@
         <testScript>verify_vmbus_interrupts.sh</testScript>
         <files>.\Testscripts\Linux\verify_vmbus_interrupts.sh,.\Testscripts\Linux\utils.sh</files>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_A3</OverrideVMSize>
+        <OverrideVMSize>Standard_B1ms</OverrideVMSize>
         <Platform>Azure,HyperV</Platform>
         <Category>Functional</Category>
         <Area>CORE</Area>
@@ -715,7 +715,7 @@
         <testName>VM-HOT-RESIZE</testName>
         <testScript>VM-HOT-RESIZE.ps1</testScript>
         <setupType>OneVM</setupType>
-        <OverrideVMSize>Standard_A4</OverrideVMSize>
+        <OverrideVMSize>Standard_B1ms</OverrideVMSize>
         <TestParameters>
             <param>TestMode="VM_HOT_RESIZE_TEST_MODE"</param>
         </TestParameters>
