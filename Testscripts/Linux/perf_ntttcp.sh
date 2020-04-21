@@ -254,9 +254,10 @@ Run_Ntttcp()
 	then
 		bufferLength=$(($bufferLength/1024))
 		echo "test_connections,tx_throughput_in_Gbps,rx_throughput_in_Gbps,datagram_loss_in_%" > "${result_file}"
-		core_mem_set_cmd="sysctl -w net.core.rmem_max=67108864; sysctl -w net.core.rmem_default=67108864; sysctl -w net.core.wmem_default=67108864; sysctl -w net.core.wmem_max=67108864"
-		Run_SSHCommand "${server}" "${core_mem_set_cmd}"
-		Run_SSHCommand "${client}" "${core_mem_set_cmd}"
+		server_core_mem_set_cmd="sysctl -w net.core.rmem_default=2129920;sysctl -w net.core.wmem_default=2129920"
+		client_core_mem_set_cmd="sysctl -w net.core.wmem_max=8388608;sysctl -w net.core.wmem_default=65536"
+		Run_SSHCommand "${server}" "${server_core_mem_set_cmd}"
+		Run_SSHCommand "${client}" "${client_core_mem_set_cmd}"
 	else
 		testType="tcp"
 		echo "test_connections,throughput_in_Gbps,cycles/byte,avglatency_in_us,txpackets_sender,rxpackets_sender,pktsInterrupt_sender" > "${result_file}"
