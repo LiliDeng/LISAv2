@@ -133,17 +133,10 @@ Class AzureProvider : TestProvider
 		# We're adding timeout of 10 minutes (default timeout) + 1 minute/10 cores (additional timeout).
 		# So For D64 VM, timeout = 10 + int[64/10] = 16 minutes.
 		# M128 VM, timeout = 10 + int[128/10] = 23 minutes.
-		$Timeout = New-Timespan -Minutes ([int]($MaximumCores / 10) + 10)
-		$sw = [diagnostics.stopwatch]::StartNew()
-		foreach ($vmData in $AllVMData) {
-			$vm = Get-AzVM -ResourceGroupName $vmData.ResourceGroupName -Name $vmData.RoleName -Status
-			while (($vm.Statuses[-1].Code -ne "PowerState/running") -and ($sw.elapsed -lt $Timeout)) {
-				Write-LogInfo "VM $($vmData.RoleName) is in $($vm.Statuses[-1].Code) state, still not in running state"
-				$vm = Get-AzVM -ResourceGroupName $vmData.ResourceGroupName -Name $vmData.RoleName -Status
-			}
-		}
-
-		if ((Is-VmAlive -AllVMDataObject $AllVMData) -eq "True") {
+		# Is-VmAlive max time by default - 50 times * 3 seconds
+		# retry_Times = timeout * 60 seconds / 3 seconds
+		$retry_Times = (([int]($MaximumCores / 10) + 10) * 60) / 3
+		if ((Is-VmAlive -AllVMDataObject $AllVMData -MaxRetryCount $retry_Times) -eq "True") {
 			return $true
 		}
 		return $false
