@@ -261,7 +261,7 @@ function install_gpu_requirements() {
 		;;
 
 		ubuntu*)
-			apt -y install build-essential libelf-dev linux-tools-"$(uname -r)" linux-cloud-tools-"$(uname -r)" python libglvnd-dev ubuntu-desktop
+			apt -y install build-essential libelf-dev linux-tools-"$(uname -r)" linux-cloud-tools-"$(uname -r)" python libglvnd-dev
 			if [ $? -eq 0 ]; then
 				LogMsg "Successfully installed build-essential libelf-dev linux-tools linux-cloud-tools python libglvnd-dev ubuntu-desktop"
 			else
