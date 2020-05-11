@@ -781,10 +781,11 @@ Class TestController
 			}
 
 			$HostVersion = ""
-			$FoundLineNumber = (Select-String -Path "$global:LogDir\$($vmData.RoleName)-dmesg.txt" -Pattern "Hyper-V Host Build").LineNumber
+			$parentFolder = Split-Path $global:LogDir
+			$FoundLineNumber = (Select-String -Path "$parentFolder\$($vmData.RoleName)-dmesg.txt" -Pattern "Hyper-V Host Build").LineNumber
 			if (![string]::IsNullOrEmpty($FoundLineNumber)) {
 				$ActualLineNumber = $FoundLineNumber[-1] - 1
-				$FinalLine = [string]((Get-Content -Path "$global:LogDir\$($vmData.RoleName)-dmesg.txt")[$ActualLineNumber])
+				$FinalLine = [string]((Get-Content -Path "$parentFolder\$($vmData.RoleName)-dmesg.txt")[$ActualLineNumber])
 				$FinalLine = $FinalLine.Replace('; Vmbus version:4.0', '')
 				$FinalLine = $FinalLine.Replace('; Vmbus version:3.0', '')
 				$HostVersion = ($FinalLine.Split(":")[$FinalLine.Split(":").Count - 1 ]).Trim().TrimEnd(";")
