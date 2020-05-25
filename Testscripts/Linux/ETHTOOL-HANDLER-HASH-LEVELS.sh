@@ -28,7 +28,7 @@ CheckResults()
     if [[ "$status" = *"Operation not supported"* ]]; then
         LogMsg "$status"
         LogMsg "Operation not supported. Test Skipped."
-        SetTestStateAborted
+        SetTestStateSkipped
         exit 0
     fi
     LogMsg "$status"

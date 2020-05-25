@@ -349,7 +349,7 @@ sts=$(ethtool -S $test_iface 2>&1)
 if [[ $sts = *"no stats available"* ]]; then
     LogErr "$sts"
     LogErr "Operation not supported. Test Skipped."
-    SetTestStateAborted
+    SetTestStateSkipped
     exit 0
 fi
 

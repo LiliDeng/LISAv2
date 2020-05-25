@@ -39,7 +39,7 @@ fi
 vmbus_version=$(dmesg | grep "Vmbus version" | awk -F: '{print $(NF)}' | awk -F. '{print $1}')
 if [ "$vmbus_version" -lt "3" ]; then
     LogMsg "Info: Host version older than 2012R2. Skipping test."
-    SetTestStateAborted
+    SetTestStateSkipped
     exit 0
 fi
 
