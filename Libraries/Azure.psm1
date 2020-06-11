@@ -283,6 +283,7 @@ Function Create-AllResourceGroupDeployments($SetupTypeData, $TestCaseData, $Dist
 		$IsWindowsOS = $CurrentTestData.AdditionalHWConfig.OSType -contains "Windows"
 		if ($IsWindowsOS) {
 			$OSType = "Windows"
+			$global:sshPrivateKey=""
 		} else {
 			$OSType = "Linux"
 		}
