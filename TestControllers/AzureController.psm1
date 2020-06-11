@@ -106,7 +106,7 @@ Class AzureController : TestController
 		}
 		if ($this.sshPrivateKey -and $this.VmPassword) {
 			Write-LogDbg "Use private key, reset password into empty."
-			$this.VmPassword = ""
+			#$this.VmPassword = ""
 		}
 		# global variables: StorageAccount, TestLocation
 		if ( $this.StorageAccount -imatch "ExistingStorage_Standard" )
