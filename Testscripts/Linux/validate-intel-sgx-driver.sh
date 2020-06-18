@@ -25,8 +25,8 @@ UtilsInit
 SetTestStateRunning
 
 rm -rf ~/samples
-update_repos
-Update_Kernel
+sudo DEBIAN_FRONTEND=noninteractive apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 echo "----- Checking sgx driver -----"
 if ! modinfo intel_sgx; then
     echo "modinfo intel_sgx failed"
