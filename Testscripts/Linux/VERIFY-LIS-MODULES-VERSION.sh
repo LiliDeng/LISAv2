@@ -42,7 +42,7 @@ case $DISTRO in
             exit 0
         fi
 
-        skip_modules=()
+        HYPERV_MODULES=()
         config_path="/boot/config-$(uname -r)"
         if [[ $(detect_linux_distribution) == clear-linux-os ]]; then
             config_path="/usr/lib/kernel/config-$(uname -r)"
@@ -51,34 +51,24 @@ case $DISTRO in
 
         declare -A config_modulesDic
         config_modulesDic=(
-        [CONFIG_HYPERV=y]="hv_vmbus"
-        [CONFIG_HYPERV_STORAGE=y]="hv_storvsc"
-        [CONFIG_HYPERV_NET=y]="hv_netvsc"
-        [CONFIG_HYPERV_UTILS=y]="hv_utils"
-        [CONFIG_HID_HYPERV_MOUSE=y]="hid_hyperv"
-        [CONFIG_HYPERV_BALLOON=y]="hv_balloon"
-        [CONFIG_HYPERV_KEYBOARD=y]="hyperv_keyboard"
+        [CONFIG_HYPERV=m]="hv_vmbus"
+        [CONFIG_HYPERV_STORAGE=m]="hv_storvsc"
+        [CONFIG_HYPERV_NET=m]="hv_netvsc"
+        [CONFIG_HYPERV_UTILS=m]="hv_utils"
+        [CONFIG_HID_HYPERV_MOUSE=m]="hid_hyperv"
+        [CONFIG_HYPERV_BALLOON=m]="hv_balloon"
+        [CONFIG_HYPERV_KEYBOARD=m]="hyperv_keyboard"
         )
         for key in $(echo ${!config_modulesDic[*]})
         do
-            module_included=$(grep $key "$config_path")
+            module_included=$(grep -E "$key" "$config_path")
             if [ "$module_included" ]; then
-                skip_modules+=("${config_modulesDic[$key]}")
-                LogMsg "Skipping the built-in modules, ${config_modulesDic[$key]}"
+                HYPERV_MODULES+=("${config_modulesDic[$key]}")
+                LogMsg "${config_modulesDic[$key]} is built as modules, added into checklist."
             fi
         done
 
-        # Remove each module in HYPERV_MODULES from skip_modules
-        for module in "${HYPERV_MODULES[@]}"; do
-            skip=""
-            for mod_skip in "${skip_modules[@]}"; do
-                [[ $module == $mod_skip ]] && { skip=1; break; }
-            done
-            [[ -n $skip ]] || tempList+=("$module")
-        done
-        HYPERV_MODULES=("${tempList[@]}")
         LogMsg "Target module names: ${HYPERV_MODULES[*]}"
-
         if [ ! $HYPERV_MODULES ]; then
             LogErr "Target module is empty or null"
             exit_code=$((exit_code+1))
