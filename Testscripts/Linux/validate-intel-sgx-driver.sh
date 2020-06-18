@@ -25,7 +25,7 @@ UtilsInit
 SetTestStateRunning
 
 rm -rf ~/samples
-sudo export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
 sudo apt-get -yq upgrade
 echo "----- Checking sgx driver -----"
