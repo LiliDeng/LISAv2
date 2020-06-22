@@ -15,6 +15,16 @@ else
     Custom_Path="/root"
 fi
 
+sshd_configFilePath="/etc/ssh/sshd_config"
+sshdServiceName="sshd"
+if [ ! -f $sshd_configFilePath ]; then
+    echo "File not found! Create one."
+    touch $sshd_configFilePath
+fi
+sed -i '/^PermitRootLogin.*no.*/d' $sshd_configFilePath
+systemctl daemon-reload
+service $sshdServiceName restart || systemctl restart $sshdServiceName
+
 rm -rf /root/.ssh/id_rsa*
 cd /root
 keyTarFile=sshFix.tar

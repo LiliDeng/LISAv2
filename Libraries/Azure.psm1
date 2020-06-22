@@ -430,9 +430,15 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 		$IsWindowsOS = $CurrentTestData.SetupConfig.OSType -contains "Windows"
 		if ($IsWindowsOS) {
 			$OSType = "Windows"
+			Write-LogDbg "Use password authentication, reset Key into empty."
+			$global:sshPrivateKey = ""
 		}
 		else {
 			$OSType = "Linux"
+			if ($global:sshPrivateKey) {
+				Write-LogDbg "Use SSH key authentication, reset password into empty."
+				$global:password = ""
+			}
 		}
 		if ( $CurrentTestData.SetupConfig.OSDiskType -eq "Ephemeral" ) {
 			if ( $UseManagedDisks ) {
