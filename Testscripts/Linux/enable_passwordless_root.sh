@@ -22,11 +22,7 @@ if [ ! -f $sshd_configFilePath ]; then
     touch $sshd_configFilePath
 fi
 sed -i '/^PermitRootLogin.*no.*/d' $sshd_configFilePath
-service $sshdServiceName restart || systemctl restart $sshdServiceName
-sshdServiceStatus=$?
-if [ $sshdServiceStatus != 0 ]; then
-    service ssh restart
-fi
+service ssh restart || service $sshdServiceName restart || systemctl restart $sshdServiceName
 
 rm -rf /root/.ssh/id_rsa*
 cd /root
