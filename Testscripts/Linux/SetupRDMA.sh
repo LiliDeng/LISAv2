@@ -117,7 +117,11 @@ function Main() {
 			LogMsg "$?: Installed required packages $req_pkg"
 			# libibverbs-devel and libibmad-devel have broken dependencies on Centos 7.6
 			# Switching to direct install instead of using the function
-			req_pkg="libibverbs-devel libibmad-devel"
+			req_pkg=(libibverbs-devel)
+			check_package "libibmad-devel"
+			if [ $? -eq 0 ]; then
+				req_pkg+=(libibmad-devel)
+			fi
 			yum install -y $req_pkg
 			LogMsg "$?: Installed $req_pkg"
 			# Install separate packages for 7.x and 8.x
