@@ -109,7 +109,7 @@ function Main() {
 			install_package $req_pkg
 			LogMsg "$?: Installed required packages $req_pkg"
 			if [[ ! $(grep 7.8 /etc/redhat-release) ]]; then
-				req_pkg="valgrind-devel libmnl-devel libnl3-devel"
+				req_pkg="valgrind-devel libnl3-devel"
 				install_package $req_pkg
 				LogMsg "$?: Installed required packages $req_pkg"
 			fi
@@ -117,10 +117,10 @@ function Main() {
 			LogMsg "$?: Installed required packages $req_pkg"
 			# libibverbs-devel and libibmad-devel have broken dependencies on Centos 7.6
 			# Switching to direct install instead of using the function
-			req_pkg=(libibverbs-devel)
-			check_package "libibmad-devel"
+			req_pkg=(libibverbs-devel libibmad-devel)
+			check_package "libmnl-devel"
 			if [ $? -eq 0 ]; then
-				req_pkg+=(libibmad-devel)
+				req_pkg+=(libmnl-devel)
 			fi
 			yum install -y $req_pkg
 			LogMsg "$?: Installed $req_pkg"
