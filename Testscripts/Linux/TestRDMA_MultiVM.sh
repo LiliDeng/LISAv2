@@ -651,6 +651,7 @@ function Main() {
 
 	# Getting ib0 interface address and store in constants.sh
 	slaves_array=$(echo ${slaves} | tr ',' ' ')
+	sleep 600
 	for vm in $master $slaves_array; do
 		ib0=$(ssh root@${vm} ip addr show ib0 | awk -F ' *|:' '/inet /{print $3}' | cut -d / -f 1)
 		if [[ $? -eq 0 && $ib0 ]]; then
