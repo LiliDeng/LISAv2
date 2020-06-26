@@ -201,7 +201,7 @@ function Install_Dpdk () {
 			else
 				packages+=(kernel-default-devel)
 			fi
-			packages+=(libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel)
+			packages+=(libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel git*)
 			;;
 		*)
 			echo "Unknown distribution"
