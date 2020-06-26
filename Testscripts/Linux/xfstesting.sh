@@ -31,7 +31,7 @@ ConfigureXFSTestTools() {
     case "$DISTRO" in
         ubuntu*|debian*)
             until dpkg --force-all --configure -a; sleep 10; do echo 'Trying again...'; done
-            pack_list=(libacl1-dev libaio-dev libattr1-dev libgdbm-dev libtool-bin libuuid1 libuuidm-ocaml-dev sqlite3 uuid-dev uuid-runtime xfslibs-dev zlib1g-dev)
+            pack_list=(indent git libacl1-dev libaio-dev libattr1-dev libgdbm-dev libtool-bin libuuid1 libuuidm-ocaml-dev sqlite3 uuid-dev uuid-runtime xfslibs-dev zlib1g-dev)
             check_package "btrfs-tools"
             if [ $? -eq 0 ]; then
                 pack_list+=(btrfs-tools)
@@ -43,12 +43,12 @@ ConfigureXFSTestTools() {
         ;;
 
         redhat*|centos*|fedora*)
-            pack_list=(libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel xfsprogs-qa-devel zlib-devel btrfs-progs-devel llvm-ocaml-devel uuid-devel)
+            pack_list=(indent git libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel xfsprogs-qa-devel zlib-devel btrfs-progs-devel llvm-ocaml-devel uuid-devel)
             which python || [ -f /usr/libexec/platform-python ] && ln -s /usr/libexec/platform-python /sbin/python
         ;;
 
         suse*|sles*)
-            pack_list=(btrfsprogs libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel zlib-devel)
+            pack_list=(btrfsprogs libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel zlib-devel git-core)
         ;;
         *)
             LogErr "OS Version not supported in InstallDependencies!"
@@ -59,7 +59,7 @@ ConfigureXFSTestTools() {
     # Install common & specific dependencies
     update_repos
     install_fio
-    pack_list+=(acl attr automake bc cifs-utils dos2unix dump e2fsprogs gawk gcc git libtool lvm2 make parted quota sed xfsdump xfsprogs indent python)
+    pack_list+=(acl attr automake bc cifs-utils dos2unix dump e2fsprogs gawk gcc libtool lvm2 make parted quota sed xfsdump xfsprogs python)
     for package in "${pack_list[@]}"; do
         check_package "$package"
         if [ $? -eq 0 ]; then
