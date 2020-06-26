@@ -3472,6 +3472,12 @@ function get_OSdisk() {
 # Sets the $PLATFORM variable to one of the following: Azure, HyperV
 # Takes no arguments
 function GetPlatform() {
+	if [[ $DISTRO_NAME == "sles" ]] && [[ $DISTRO_VERSION =~ 15 ]] || [[ $DISTRO_NAME == "sle_hpc" ]]; then
+		zypper_install "net-tools-deprecated" > /dev/null 2>&1
+	fi
+	if [[ "${DISTRO_NAME}" == "ubuntu" ]]; then
+		apt_get_install "net-tools" > /dev/null 2>&1
+	fi
 	route -n | grep "169.254.169.254" > /dev/null
 	if [[ $? == 0 ]];then
 		http_code=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance?api-version=2019-06-01" -w "%{http_code}" -o /dev/null -s -m 3)
