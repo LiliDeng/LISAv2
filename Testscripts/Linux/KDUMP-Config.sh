@@ -344,10 +344,10 @@ fi
 Config_"${OS_FAMILY}"
 
 # Remove old crashkernel params
-sed -i --follow-symlinks "s/crashkernel=\S*//g" $boot_filepath
+#sed -i --follow-symlinks "s/crashkernel=\S*//g" $boot_filepath
 
 # Remove console params; It could interfere with the testing
-sed -i --follow-symlinks "s/console=\S*//g" $boot_filepath
+#sed -i --follow-symlinks "s/console=\S*//g" $boot_filepath
 
 # Add the crashkernel param
 if [[ $DISTRO != "redhat_8" ]] && [[ $DISTRO != "centos_8" ]]; then
