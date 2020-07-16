@@ -77,7 +77,8 @@ RunFIO()
 	JSONFILELOG="${LOGDIR}/jsonLog"
 	IOSTATLOGDIR="${LOGDIR}/iostatLog"
 	LOGFILE="${LOGDIR}/fio-test.log.txt"
-
+	fio --direct=1 --ioengine=libaio --filename=/dev/nvme0n1:/dev/nvme1n1:/dev/nvme2n1:/dev/nvme3n1:/dev/nvme4n1:/dev/nvme5n1:/dev/nvme6n1:/dev/nvme7n1 --gtod_reduce=1 --readwrite=randwrite --bs=4K --runtime=14400 --iodepth=256 --numjob=64 --output-format=json --output=/root/FIOLog/jsonLog/fio-result-randwrite-4K-16384td-4hours.json --name='iterationrw' >> $LOGFILE 2>&1
+	fio --direct=1 --ioengine=libaio --filename=/dev/nvme0n1:/dev/nvme1n1:/dev/nvme2n1:/dev/nvme3n1:/dev/nvme4n1:/dev/nvme5n1:/dev/nvme6n1:/dev/nvme7n1 --gtod_reduce=1 --readwrite=write --bs=128K --runtime=14400 --iodepth=256 --numjob=64 --output-format=json --output=/root/FIOLog/jsonLog/fio-result-write-4K-16384td-4hours.json --name='iterationw' >> $LOGFILE 2>&1
 	# redirect blktrace files directory
 	Resource_mount=$(mount -l | grep /sdb1 | awk '{print$3}')
 	blk_base="${Resource_mount}/blk-$(date +"%m%d%Y-%H%M%S")"
