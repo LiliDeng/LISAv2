@@ -3460,3 +3460,12 @@ function GetPlatform() {
 	fi
 	LogMsg "Running on platform: $PLATFORM"
 }
+
+get_AvailableDisks() {
+	for disk in $(lsblk | grep "sd[a-z].*disk" | cut -d ' ' -f1);
+	do
+		if [ $(df | grep -c $disk) -eq 0 ]; then
+			echo $disk
+		fi
+	done
+}
