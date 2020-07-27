@@ -146,12 +146,12 @@ function Main {
         if ($vcpu -eq 4){
             Write-LogInfo "Kdump will be triggered on VCPU 3 of 4"
             Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "taskset -c 2 echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
+                -command "echo 20 > /proc/sys/kernel/panic; taskset -c 2 echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
         } else {
             # If directly use plink to trigger kdump, command fails to exit, so use start-process
             Write-LogInfo "Set /proc/sysrq-trigger"
             Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "sync; echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
+                -command "echo 20 > /proc/sys/kernel/panic; sync; echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
         }
     }
 
