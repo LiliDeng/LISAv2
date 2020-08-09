@@ -2800,6 +2800,7 @@ function install_netperf () {
 
 function install_net_tools () {
 	if [[ $DISTRO_NAME == "sles" ]] && [[ $DISTRO_VERSION =~ 15 ]] || [[ $DISTRO_NAME == "sle_hpc" ]]; then
+		add_sles_network_utilities_repo
 		zypper_install "net-tools-deprecated" > /dev/null 2>&1
 	fi
 	if [[ "${DISTRO_NAME}" == "ubuntu" ]]; then
