@@ -3200,7 +3200,7 @@ function stop_firewall() {
 			fi
 			;;
 		redhat* | centos* | fedora*)
-			service firewalld stop
+			service firewalld stop || systemctl stop firewalld
 			if [ $? -ne 0 ]; then
 				exit 1
 			fi
