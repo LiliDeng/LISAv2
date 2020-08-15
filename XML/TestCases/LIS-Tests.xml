@@ -41,7 +41,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -63,7 +62,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -85,7 +83,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -107,7 +104,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -129,7 +125,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -151,7 +146,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -173,7 +167,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>
@@ -195,7 +188,6 @@
       <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
       <param>LIS_TARBALL_URL_OLD=LIS_OLD_URL</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
     </TestParameters>
     <Timeout>2400</Timeout>
     <Platform>Azure,HyperV</Platform>

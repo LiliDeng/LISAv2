@@ -80,7 +80,6 @@
     <testScript>VERIFY-LIS-MODULES-VERSION.sh</testScript>
     <files>.\TestScripts\Linux\VERIFY-LIS-MODULES-VERSION.sh,.\TestScripts\Linux\utils.sh</files>
     <TestParameters>
-      <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
       <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
     </TestParameters>
     <Platform>Azure,HyperV</Platform>

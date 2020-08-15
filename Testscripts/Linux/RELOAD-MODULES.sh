@@ -28,7 +28,7 @@ if [ "${LoopCount:-UNDEFINED}" = "UNDEFINED" ]; then
     LoopCount=100
 fi
 
-HYPERV_MODULES=(hv_vmbus hv_netvsc hv_storvsc hv_utils hv_balloon hid_hyperv hyperv_keyboard hyperv_fb)
+HYPERV_MODULES=()
 MODULES_TO_RELOAD=(hv_netvsc)
 MODULES_NOT_TO_RELOAD=(hyperv_fb)
 skip_modules=()
@@ -36,33 +36,23 @@ config_path=$(get_bootconfig_path)
 
 declare -A config_modulesDic
 config_modulesDic=(
-[CONFIG_HYPERV=y]="hv_vmbus"
-[CONFIG_HYPERV_NET=y]="hv_netvsc"
-[CONFIG_HYPERV_STORAGE=y]="hv_storvsc"
-[CONFIG_HYPERV_UTILS=y]="hv_utils"
-[CONFIG_HYPERV_BALLOON=y]="hv_balloon"
-[CONFIG_HID_HYPERV_MOUSE=y]="hid_hyperv"
-[CONFIG_HYPERV_KEYBOARD=y]="hyperv_keyboard"
-[CONFIG_FB_HYPERV=y]="hyperv_fb"
+[CONFIG_HYPERV=m]="hv_vmbus"
+[CONFIG_HYPERV_NET=m]="hv_netvsc"
+[CONFIG_HYPERV_STORAGE=m]="hv_storvsc"
+[CONFIG_HYPERV_UTILS=m]="hv_utils"
+[CONFIG_HYPERV_BALLOON=m]="hv_balloon"
+[CONFIG_HID_HYPERV_MOUSE=m]="hid_hyperv"
+[CONFIG_HYPERV_KEYBOARD=m]="hyperv_keyboard"
+[CONFIG_FB_HYPERV=m]="hyperv_fb"
 )
 for key in $(echo ${!config_modulesDic[*]})
 do
     module_included=$(grep $key "$config_path")
     if [ "$module_included" ]; then
-        skip_modules+=("${config_modulesDic[$key]}")
-        LogMsg "Info: Skiping ${config_modulesDic[$key]} module as it is built-in."
+        HYPERV_MODULES+=("${config_modulesDic[$key]}")
+        LogMsg "${config_modulesDic[$key]} is built as modules, added into checklist"
     fi
 done
-
-# Remove each module in HYPERV_MODULES from skip_modules
-for module in "${HYPERV_MODULES[@]}"; do
-    skip=""
-    for mod_skip in "${skip_modules[@]}"; do
-        [[ $module == $mod_skip ]] && { skip=1; break; }
-    done
-    [[ -n $skip ]] || tempList+=("$module")
-done
-HYPERV_MODULES=("${tempList[@]}")
 
 if [[ ${#HYPERV_MODULES[@]} -eq 0 ]];then
     LogMsg "All modules are built-in. Skip this case."
