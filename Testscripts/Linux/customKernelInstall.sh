@@ -34,7 +34,7 @@ done
 
 # check for either if the custom kernel is a set of rpm/deb packages
 # or a support kernel from the above list
-if [[ -z "$CustomKernel" ]] || [[ "$CustomKernel" != @(*.rpm|*.deb|*tar.gz|*.tar) ]]; then
+if [[ -z "$CustomKernel" ]] || [[ "$CustomKernel" != @(*.rpm*|*.deb*|*tar.gz|*.tar) ]]; then
     if [[ ! " ${supported_kernels[*]} " =~ $CustomKernel ]]; then
         echo "Please mention a set of rpm/deb kernel packages, or a supported kernel type
         with -CustomKernel, accepted values are: ${supported_kernels[@]}"
@@ -321,7 +321,7 @@ function InstallKernel() {
         fi
     elif [ "${CustomKernel}" == "netnext" ]; then
         kernelSource="https://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git"
-    elif [[ $CustomKernel == *.deb ]]; then
+    elif [[ $CustomKernel == *.deb* ]]; then
         LogMsg "Custom Kernel:$CustomKernel"
         apt -y update
         CheckInstallLockUbuntu
@@ -333,7 +333,7 @@ function InstallKernel() {
         apt remove -y grub-legacy-ec2
 
         customKernelFilesUnExpanded="${CustomKernel#$LOCAL_FILE_PREFIX}"
-        if [[ "${customKernelFilesUnExpanded}" == *'*.deb'* ]]; then
+        if [[ "${customKernelFilesUnExpanded}" == *'*.deb*'* ]]; then
             CheckInstallLockUbuntu
             apt-get remove -y linux-cloud-tools-common
             image_file=$(ls -1 *image* | grep -v "dbg" | sed -n 1p)
