@@ -673,7 +673,7 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 		$SupportedKernels = "ppa", "proposed", "proposed-azure", "proposed-edge",
 			"latest", "linuxnext", "netnext", "upstream-stable"
 
-		if ( ($CustomKernel -notin $SupportedKernels) -and ($CustomKernel -inotcontains ".deb") -and ($CustomKernel -inotcontains ".rpm") -and !($CustomKernel.EndsWith(".tar.gz")) -and !($CustomKernel.EndsWith(".tar")) ) {
+		if ( ($CustomKernel -notin $SupportedKernels) -and ($CustomKernel -inotmatch ".deb") -and ($CustomKernel -inotmatch ".rpm") -and !($CustomKernel.EndsWith(".tar.gz")) -and !($CustomKernel.EndsWith(".tar")) ) {
 			Write-LogErr "Only following kernel types are supported: $SupportedKernels.`
 			Or use -CustomKernel <link to deb file>, -CustomKernel <link to rpm file>"
 		} else {
