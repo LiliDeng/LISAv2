@@ -26,15 +26,15 @@ supported_kernels=(ppa proposed proposed-azure proposed-edge latest
 }
 UtilsInit
 
-while echo $1 | grep ^- > /dev/null; do
-    eval $( echo $1 | sed 's/-//g' | tr -d '\012')=$2
-    shift
-    shift
+while echo $1 | grep -q ^-; do
+   declare $( echo $1 | sed 's/^-//' )=$2
+   shift
+   shift
 done
 
 # check for either if the custom kernel is a set of rpm/deb packages
 # or a support kernel from the above list
-if [[ -z "$CustomKernel" ]] || [[ "$CustomKernel" != @(*.rpm*|*.deb*|*tar.gz|*.tar) ]]; then
+if [[ -z "$CustomKernel" ]] || [[ ! "$CustomKernel" =~ (.*rpm.*|.*deb.*|.*tar.gz.*|.*.tar.*) ]]; then
     if [[ ! " ${supported_kernels[*]} " =~ $CustomKernel ]]; then
         echo "Please mention a set of rpm/deb kernel packages, or a supported kernel type
         with -CustomKernel, accepted values are: ${supported_kernels[@]}"
@@ -201,8 +201,16 @@ function InstallKernel() {
         IFS=', ' read -r -a array <<<  "$CustomKernel"
         for url in "${array[@]}"; do
             LogMsg "Web link detected. Downloading $url"
-            wget "$url"
+            IFS='?' read -ra sasarray <<< "$CustomKernel"
+            if [[ "${#sasarray[@]}" -eq 2 ]]; then
+                IFS='/' read -ra urlarray <<< "${sasarray[0]}"
+                wget "$url" -O "${urlarray[-1]}"
+                CustomKernel="${sasarray[0]}"
+            else
+                wget "$url"
+            fi
         done
+        IFS=', ' read -r -a array <<<  "$CustomKernel"
         if [[ "${#array[@]}" -gt 1 ]]; then
             CustomKernel="$(Get_Kernel_Name)"
         fi
