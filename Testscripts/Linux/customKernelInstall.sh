@@ -248,13 +248,15 @@ function InstallKernel() {
         release=$(lsb_release -c -s)
         LogMsg "Enabling proposed repository for $release distro"
         echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list
+        cp /etc/apt/sources.list /etc/apt/sources.list.bak
         rm -rf /etc/apt/preferences.d/proposed-updates
         LogMsg "Installing linux-azure kernel from $release proposed repository."
         apt-get clean all
-        apt-get -y update >> $LOG_FILE 2>&1
+        apt update >> $LOG_FILE 2>&1
         CheckInstallLockUbuntu
         apt-get install -yq linux-azure/"$release" >> $LOG_FILE 2>&1
         kernelInstallStatus=$?
+        sleep 300
         if [ $kernelInstallStatus -ne 0 ]; then
             LogMsg "CUSTOM_KERNEL_FAIL"
             SetTestStateFailed
