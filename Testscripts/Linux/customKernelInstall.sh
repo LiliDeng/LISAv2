@@ -254,6 +254,7 @@ function InstallKernel() {
         apt-get -y update >> $LOG_FILE 2>&1
         CheckInstallLockUbuntu
         apt-get install -yq linux-azure/"$release" >> $LOG_FILE 2>&1
+        update-grub
         kernelInstallStatus=$?
         if [ $kernelInstallStatus -ne 0 ]; then
             LogMsg "CUSTOM_KERNEL_FAIL"
