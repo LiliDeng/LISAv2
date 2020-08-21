@@ -260,8 +260,6 @@ function InstallKernel() {
             SetTestStateFailed
         else
             LogMsg "CUSTOM_KERNEL_SUCCESS"
-            DEBIAN_FRONTEND=noninteractive apt -y purge linux-image-$(uname -r)
-            update-grub
             SetTestStateCompleted
         fi
     elif [ "${CustomKernel}" == "proposed-edge" ]; then
@@ -281,8 +279,6 @@ function InstallKernel() {
             SetTestStateFailed
         else
             LogMsg "CUSTOM_KERNEL_SUCCESS"
-            DEBIAN_FRONTEND=noninteractive apt -y purge linux-image-$(uname -r)
-            update-grub
             SetTestStateCompleted
         fi
     elif [ "${CustomKernel}" == "ppa" ]; then
