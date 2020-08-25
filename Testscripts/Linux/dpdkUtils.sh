@@ -533,6 +533,7 @@ function Create_Testpmd_Cmd() {
 	fi
 	# partial strings to concat
 	local testpmd="dpdk-testpmd"
+	export PATH="/usr/local/bin:${PATH}"
 	local eal_opts=""
 	local eal_debug_opts="--log-level=eal,debug --log-level=mlx,debug"
 	case "$pmd" in

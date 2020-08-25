@@ -2437,7 +2437,7 @@ Function Restart-VMFromShell($VMData, [switch]$SkipRestartCheck) {
     }
 }
 
-Function Wait-AzVMBackRunningWithTimeOut($AllVMData, [scriptblock]$AzVMScript) {
+Function Wait-AzVMBackRunningWithTimeOut($AllVMData, [scriptblock]$AzVMScript, $MaxRetryCount = 10) {
     if (!$AllVMData -or !$AllVMData.InstanceSize -or !$AllVMData.ResourceGroupName -or !$AllVMData.RoleName) {
         return $false
     }
@@ -2477,7 +2477,7 @@ Function Wait-AzVMBackRunningWithTimeOut($AllVMData, [scriptblock]$AzVMScript) {
             $vmData.PublicIP = ($VMDataWithPublicIP | Where-Object {$_.RoleName -eq $vmData.RoleName}).PublicIP
         }
 
-        if ((Is-VmAlive -AllVMDataObject $AllVMData -MaxRetryCount 10) -eq "True") {
+        if ((Is-VmAlive -AllVMDataObject $AllVMData -MaxRetryCount $MaxRetryCount) -eq "True") {
             return $true
         }
         return $false

@@ -45,9 +45,9 @@ InstallDotnetSDK() {
             if CheckDotnetSDKSupport $package;then
                 wget ${package} -O ${package_name}
                 dpkg -i ${package_name}
-                add-apt-repository universe
+                add-apt-repository -y universe
                 apt-get update
-                apt-get install apt-transport-https
+                apt-get install -y apt-transport-https
                 apt-get update
                 # The latest dotnet-sdk version is 2.2 in Ubuntu 14.04
                 if [[ $os_RELEASE = '14.04' ]]; then
