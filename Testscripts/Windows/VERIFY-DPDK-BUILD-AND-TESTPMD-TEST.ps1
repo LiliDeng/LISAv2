@@ -10,6 +10,13 @@ function Main {
 	$currentTestResult = Create-TestResultObject
 
 	try {
+		Write-LogInfo "Restart VMs to restore them into original status."
+		$isRestarted = $TestProvider.RestartAllDeployments($AllVmData)
+		if ($isRestarted) {
+			Write-LogInfo "VMs restart successfully."
+		} else {
+			Throw "Fail to restart VMs. Aborting Test."
+		}
 		$noClient = $true
 		$noServer = $true
 		foreach ($vmData in $allVMData) {
