@@ -134,6 +134,9 @@ function Main {
         return "ABORTED"
     }
 
+    Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
+        -command "sleep 300" -runAsSudo -runMaxAllowedTime 500 | Out-Null
+
     # Trigger the kernel panic
     Write-LogInfo "Trigger the kernel panic..."
     if ($nmi -eq 1) {
