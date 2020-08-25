@@ -146,7 +146,7 @@ function Main {
         if ($vcpu -eq 4){
             Write-LogInfo "Kdump will be triggered on VCPU 3 of 4"
             Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "sleep 300" -runAsSudo
+                -command "sleep 300" -runAsSudo -runMaxAllowedTime 400
             Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
                 -command "taskset -c 2 echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
         } else {
