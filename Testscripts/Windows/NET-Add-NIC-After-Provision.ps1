@@ -85,8 +85,8 @@ function Main {
 		}
 
 		# Waiting for the VM to run again and respond to SSH - port 22
-		$retval = Wait-ForVMToStartSSH -Ipv4addr $AllVMData.PublicIP -StepTimeout 600
-		if ($retval -eq $False) {
+		$isVmAlive = Is-VmAlive -AllVMDataObject $TestVMData -MaxRetryCount 70
+		if ($isVmAlive -eq "False") {
 			Write-LogErr "Test case timed out waiting for VM to boot"
 			return "FAIL"
 		}
