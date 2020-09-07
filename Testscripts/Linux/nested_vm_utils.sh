@@ -89,6 +89,20 @@ Install_KVM_Dependencies()
         make install
         cd ..
     fi
+    command -v dnsmasq
+    if [ $? -ne 0 ]; then
+        check_package "dnsmasq"
+        if [ $? -eq 0 ]; then
+            LogMsg "Install dnsmasq"
+            install_package dnsmasq
+        fi
+        check_package "dnsmasq-base"
+        if [ $? -eq 0 ]; then
+            LogMsg "Install dnsmasq-base"
+            install_package dnsmasq-base
+        fi
+    fi
+    install_net_tools
 }
 
 Download_Image_Files()

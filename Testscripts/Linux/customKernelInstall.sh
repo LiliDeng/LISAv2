@@ -247,7 +247,7 @@ function InstallKernel() {
         export DEBIAN_FRONTEND=noninteractive
         release=$(lsb_release -c -s)
         LogMsg "Enabling proposed repository for $release distro"
-        echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list.d/sources.list
         rm -rf /etc/apt/preferences.d/proposed-updates
         LogMsg "Installing linux-azure kernel from $release proposed repository."
         apt-get clean all
@@ -260,13 +260,14 @@ function InstallKernel() {
             SetTestStateFailed
         else
             LogMsg "CUSTOM_KERNEL_SUCCESS"
+            DEBIAN_FRONTEND=noninteractive apt-get --purge remove linux-image-$(uname -r)
             SetTestStateCompleted
         fi
     elif [ "${CustomKernel}" == "proposed-edge" ]; then
         export DEBIAN_FRONTEND=noninteractive
         release=$(lsb_release -c -s)
         LogMsg "Enabling proposed repository for $release distro"
-        echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list.d/sources.list
         rm -rf /etc/apt/preferences.d/proposed-updates
         LogMsg "Installing linux-azure-edge kernel from $release proposed repository."
         apt-get clean all
@@ -279,6 +280,7 @@ function InstallKernel() {
             SetTestStateFailed
         else
             LogMsg "CUSTOM_KERNEL_SUCCESS"
+            DEBIAN_FRONTEND=noninteractive apt-get --purge remove linux-image-$(uname -r)
             SetTestStateCompleted
         fi
     elif [ "${CustomKernel}" == "ppa" ]; then
