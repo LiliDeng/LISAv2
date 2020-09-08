@@ -48,9 +48,11 @@ Install_KVM_Dependencies()
     fi
     update_repos
     install_package qemu-kvm
-    check_package "bridge-utils"
-    if [ $? -eq 0 ]; then
-        install_package bridge-utils
+    install_bridge_utils
+    if [ $? -ne 0 ]; then
+        LogErr "Failed to install bridge-utils"
+        Update_Test_State $ICA_TESTFAILED
+        exit 0
     fi
     lsmod | grep kvm_intel
     exit_status=$?

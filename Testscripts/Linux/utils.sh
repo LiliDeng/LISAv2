@@ -3764,3 +3764,24 @@ function Check_lsvmbus()
 		install_package python
 	fi
 }
+
+function install_bridge_utils() {
+	check_package "bridge-utils"
+	if [ $? -eq 0 ]; then
+		install_package bridge-utils
+	else
+		install_package "git make gcc autoconf"
+		rm -rf bridge-utils
+		git clone https://github.com/Gandi/bridge-utils
+		pushd bridge-utils/ && autoconf && ./configure && make
+		popd
+	fi
+	command -v brctl
+	if [ $? -eq 0 ]; then
+		LogMsg "bridge-utils installed successfully."
+		exit 0
+	else
+		LogErr "Fail to install bridge-utils"
+		exit 1
+	fi
+}
