@@ -3773,15 +3773,15 @@ function install_bridge_utils() {
 		install_package "git make gcc autoconf"
 		rm -rf bridge-utils
 		git clone https://github.com/Gandi/bridge-utils
-		pushd bridge-utils/ && autoconf && ./configure && make
+		pushd bridge-utils/ && autoconf && ./configure --prefix=/usr && make && make install
 		popd
 	fi
 	command -v brctl
 	if [ $? -eq 0 ]; then
 		LogMsg "bridge-utils installed successfully."
-		exit 0
+		return 0
 	else
 		LogErr "Fail to install bridge-utils"
-		exit 1
+		return 1
 	fi
 }
