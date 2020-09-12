@@ -214,6 +214,7 @@ function Install_Dpdk () {
 				packages+=(kernel-default-devel)
 			fi
 			packages+=(libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel meson pkg-config)
+			ln -sf /usr/include/libmnl/libmnl/libmnl.h /usr/include/libmnl/libmnl.h
 			;;
 		*)
 			echo "Unknown distribution"
