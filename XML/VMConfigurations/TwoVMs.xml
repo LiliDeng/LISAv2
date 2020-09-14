@@ -114,7 +114,7 @@
         <isDeployed>NO</isDeployed>
         <ResourceGroup>
             <VirtualMachine>
-                <InstanceSize>Standard_DS15_v2</InstanceSize>
+                <InstanceSize>Standard_F72s_v2</InstanceSize>
                 <RoleName></RoleName>
                 <EndPoints>
                     <Name>SSH</Name>
@@ -126,7 +126,7 @@
             </VirtualMachine>
             <VirtualMachine>
                 <DeployOnDifferentHyperVHost>yes</DeployOnDifferentHyperVHost>
-                <InstanceSize>Standard_DS15_v2</InstanceSize>
+                <InstanceSize>Standard_F72s_v2</InstanceSize>
                 <RoleName></RoleName>
                 <EndPoints>
                     <Name>SSH</Name>
