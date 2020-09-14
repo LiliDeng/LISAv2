@@ -154,7 +154,7 @@ function Main {
             # If directly use plink to trigger kdump, command fails to exit, so use start-process
             Write-LogInfo "Set /proc/sysrq-trigger"
             Run-LinuxCmd -username $VMUserName -password $VMPassword -ip $Ipv4 -port $VMPort `
-                -command "sync; echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
+                -command "sync; taskset -c 1 echo c > /proc/sysrq-trigger" -RunInBackGround -runAsSudo | Out-Null
         }
     }
 
