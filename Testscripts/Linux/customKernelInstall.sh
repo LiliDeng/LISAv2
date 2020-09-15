@@ -16,7 +16,7 @@
 #######################################################################
 
 supported_kernels=(ppa proposed proposed-azure proposed-edge latest
-                    linuxnext netnext upstream-stable)
+                    linuxnext netnext upstream-stable esm fips)
 
 # Source utils.sh
 . utils.sh || {
@@ -222,6 +222,41 @@ function InstallKernel() {
     elif [ "${CustomKernel}" == "upstream-stable" ]; then
         # kernel.org stable tree
         kernelSource="git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+    elif [ "${CustomKernel}" == "esm" ]; then
+        export DEBIAN_FRONTEND=noninteractive
+        release=$(lsb_release -c -s)
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys $KEY
+        add-apt-repository "deb $PPAREPO $release main"
+        apt clean all
+        apt -y update >> $LOG_FILE 2>&1
+        CheckInstallLockUbuntu
+        apt-get install -yq linux-azure >> $LOG_FILE 2>&1
+        kernelInstallStatus=$?
+        if [ $kernelInstallStatus -ne 0 ]; then
+            LogMsg "CUSTOM_KERNEL_FAIL"
+            SetTestStateFailed
+        else
+            LogMsg "CUSTOM_KERNEL_SUCCESS"
+            SetTestStateCompleted
+        fi
+    elif [ "${CustomKernel}" == "fips" ]; then
+        export DEBIAN_FRONTEND=noninteractive
+        release=$(lsb_release -c -s)
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys $KEY
+        add-apt-repository "deb $PPAREPO $release main"
+        apt clean all
+        apt -y update >> $LOG_FILE 2>&1
+        apt install -y linux-azure-fips >> $LOG_FILE 2>&1
+        kernelInstallStatus=$?
+        if [ $kernelInstallStatus -ne 0 ]; then
+            LogMsg "CUSTOM_KERNEL_FAIL"
+            SetTestStateFailed
+        else
+            LogMsg "CUSTOM_KERNEL_SUCCESS"
+            apt remove -y linux-azure-$(uname -r)
+            apt remove -y linux-image*$(uname -r)
+            SetTestStateCompleted
+        fi
     elif [ "${CustomKernel}" == "proposed" ]; then
         export DEBIAN_FRONTEND=noninteractive
         release=$(lsb_release -c -s)

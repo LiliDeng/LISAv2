@@ -674,7 +674,7 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 		$CustomKernel = $CustomKernel.Trim()
 		# when adding new kernels here, also update script customKernelInstall.sh
 		$SupportedKernels = "ppa", "proposed", "proposed-azure", "proposed-edge",
-			"latest", "linuxnext", "netnext", "upstream-stable"
+			"latest", "linuxnext", "netnext", "upstream-stable", "esm", "fips"
 
 		if ( ($CustomKernel -notin $SupportedKernels) -and !($CustomKernel.EndsWith(".deb")) -and `
 		!($CustomKernel.EndsWith(".rpm")) -and !($CustomKernel.EndsWith(".tar.gz")) -and !($CustomKernel.EndsWith(".tar")) ) {
@@ -704,9 +704,19 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh" -runAsSudo
 				$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "uname -r"
 				Write-LogInfo "Executing $scriptName ..."
+				$cmd = "/home/$user/$scriptName -CustomKernel '$CustomKernelLabel' -logFolder /home/$user"
+				if ($CustomKernel -eq "esm") {
+					$KEY = $Global:XmlSecrets.secrets.ESMKey
+					$PPAREPO = $Global:XmlSecrets.secrets.ESMRepo
+					$cmd += " -KEY $KEY -PPAREPO $PPAREPO"
+				}
+				if ($CustomKernel -eq "fips") {
+					$KEY = $Global:XmlSecrets.secrets.FIPSKey
+					$PPAREPO = $Global:XmlSecrets.secrets.FIPSRepo
+					$cmd += " -KEY $KEY -PPAREPO $PPAREPO"
+				}
 				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user `
-					-password $password -command "/home/$user/$scriptName -CustomKernel '$CustomKernelLabel' -logFolder /home/$user" `
-					-RunInBackground -runAsSudo
+					-password $password -command $cmd -RunInBackground -runAsSudo
 				$packageInstallObj = New-Object PSObject
 				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
 				if ($vmData.RoleName.Contains($vmData.ResourceGroupName)) {
