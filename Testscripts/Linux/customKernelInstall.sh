@@ -253,8 +253,8 @@ function InstallKernel() {
             SetTestStateFailed
         else
             LogMsg "CUSTOM_KERNEL_SUCCESS"
-            apt remove -y linux-azure-$(uname -r)
-            apt remove -y linux-image*$(uname -r)
+            apt remove -y linux-azure-$(uname -r) >> $LOG_FILE 2>&1
+            apt remove -y linux-image*$(uname -r) >> $LOG_FILE 2>&1
             SetTestStateCompleted
         fi
     elif [ "${CustomKernel}" == "proposed" ]; then
