@@ -543,6 +543,11 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 			$offer = $imageInfo[1]
 			$sku = $imageInfo[2]
 			$version = $imageInfo[3]
+			$terms = Get-AzMarketplaceTerms -Publisher $publisher -Product $offer -Name $sku -ErrorAction SilentlyContinue
+			if ($terms -and !$terms.Accepted) {
+				Write-LogInfo "Accept terms for Publisher $publisher, Product $offer, Name $sku"
+				$terms | Set-AzMarketplaceTerms -Accept | Out-Null
+			}
 		}
 
 		$vmCount = 0
@@ -1348,13 +1353,13 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 			Add-Content -Value "$($indents[3])^type^: ^Microsoft.Compute/virtualMachines^," -Path $jsonFile
 			Add-Content -Value "$($indents[3])^name^: ^$vmName^," -Path $jsonFile
 			Add-Content -Value "$($indents[3])^location^: ^[variables('location')]^," -Path $jsonFile
-			if ($publisher -imatch "clear-linux-project") {
-				Write-LogInfo "  Adding plan information for clear-linux.."
+			if ($terms) {
+				Write-LogInfo "  Adding plan information: plan name - $sku, product - $offer, publisher - $publisher."
 				Add-Content -Value "$($indents[3])^plan^:" -Path $jsonFile
 				Add-Content -Value "$($indents[3]){" -Path $jsonFile
 				Add-Content -Value "$($indents[4])^name^: ^$sku^," -Path $jsonFile
-				Add-Content -Value "$($indents[4])^product^: ^clear-linux-os^," -Path $jsonFile
-				Add-Content -Value "$($indents[4])^publisher^: ^clear-linux-project^" -Path $jsonFile
+				Add-Content -Value "$($indents[4])^product^: ^$offer^," -Path $jsonFile
+				Add-Content -Value "$($indents[4])^publisher^: ^$publisher^" -Path $jsonFile
 				Add-Content -Value "$($indents[3])}," -Path $jsonFile
 			}
 			Add-Content -Value "$($indents[3])^tags^: {^TestID^: ^$TestID^}," -Path $jsonFile
