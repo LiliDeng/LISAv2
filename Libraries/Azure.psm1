@@ -1353,13 +1353,19 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 			Add-Content -Value "$($indents[3])^type^: ^Microsoft.Compute/virtualMachines^," -Path $jsonFile
 			Add-Content -Value "$($indents[3])^name^: ^$vmName^," -Path $jsonFile
 			Add-Content -Value "$($indents[3])^location^: ^[variables('location')]^," -Path $jsonFile
-			if ($terms) {
-				Write-LogInfo "  Adding plan information: plan name - $sku, product - $offer, publisher - $publisher."
+			if ($version -ne "latest") {
+				$used_image = Get-AzVMImage -Location $Location -PublisherName $publisher -Offer $offer -Skus $sku -Version $version
+			} else {
+				$used_image = Get-AzVMImage -Location $Location -PublisherName $publisher -Offer $offer -Skus $sku
+				$used_image = Get-AzVMImage -Location $Location -PublisherName $publisher -Offer $offer -Skus $sku -Version $used_image[-1].Version
+			}
+			if ($used_image.PurchasePlan) {
+				Write-LogInfo "  Adding plan information: plan name - $($used_image.PurchasePlan.Name), product - $($used_image.PurchasePlan.Product), publisher -$($used_image.PurchasePlan.Publisher)."
 				Add-Content -Value "$($indents[3])^plan^:" -Path $jsonFile
 				Add-Content -Value "$($indents[3]){" -Path $jsonFile
-				Add-Content -Value "$($indents[4])^name^: ^$sku^," -Path $jsonFile
-				Add-Content -Value "$($indents[4])^product^: ^$offer^," -Path $jsonFile
-				Add-Content -Value "$($indents[4])^publisher^: ^$publisher^" -Path $jsonFile
+				Add-Content -Value "$($indents[4])^name^: ^$($used_image.PurchasePlan.Name)^," -Path $jsonFile
+				Add-Content -Value "$($indents[4])^product^: ^$($used_image.PurchasePlan.Product)^," -Path $jsonFile
+				Add-Content -Value "$($indents[4])^publisher^: ^$($used_image.PurchasePlan.Publisher)^" -Path $jsonFile
 				Add-Content -Value "$($indents[3])}," -Path $jsonFile
 			}
 			Add-Content -Value "$($indents[3])^tags^: {^TestID^: ^$TestID^}," -Path $jsonFile
@@ -1562,47 +1568,45 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 			Add-Content -Value "$($indents[5])}," -Path $jsonFile
 			Write-LogInfo "Added $DiskType OS disk : $vmName-OSDisk"
 			$dataDiskAdded = $false
-			if (!$terms) {
-				Add-Content -Value "$($indents[5])^dataDisks^ : " -Path $jsonFile
-				Add-Content -Value "$($indents[5])[" -Path $jsonFile
-				foreach ( $dataDisk in $newVM.DataDisk ) {
-					if ( $dataDisk.LUN -ge 0 ) {
-						if ( $dataDiskAdded ) {
-							Add-Content -Value "$($indents[6])," -Path $jsonFile
-						}
-						if ($UseManagedDisks) {
-							Add-Content -Value "$($indents[6]){" -Path $jsonFile
-							Add-Content -Value "$($indents[7])^name^: ^$vmName-disk-lun-$($dataDisk.LUN)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^diskSizeGB^: ^$($dataDisk.DiskSizeInGB)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^lun^: ^$($dataDisk.LUN)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^createOption^: ^Empty^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^caching^: ^$($dataDisk.HostCaching)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^managedDisk^:" -Path $jsonFile
-							Add-Content -Value "$($indents[7]){" -Path $jsonFile
-							Add-Content -Value "$($indents[8])^storageAccountType^: ^$StorageAccountType^" -Path $jsonFile
-							Add-Content -Value "$($indents[7])}" -Path $jsonFile
-							Add-Content -Value "$($indents[6])}" -Path $jsonFile
-							Write-LogInfo "Added managed $($dataDisk.DiskSizeInGB)GB Datadisk to $($dataDisk.LUN)."
-						}
-						else {
-							Add-Content -Value "$($indents[6]){" -Path $jsonFile
-							Add-Content -Value "$($indents[7])^name^: ^$vmName-disk-lun-$($dataDisk.LUN)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^diskSizeGB^: ^$($dataDisk.DiskSizeInGB)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^lun^: ^$($dataDisk.LUN)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^createOption^: ^Empty^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^caching^: ^$($dataDisk.HostCaching)^," -Path $jsonFile
-							Add-Content -Value "$($indents[7])^vhd^:" -Path $jsonFile
-							Add-Content -Value "$($indents[7]){" -Path $jsonFile
-							Add-Content -Value "$($indents[8])^uri^: ^[concat('http://',variables('StorageAccountName'),'.blob.core.windows.net/vhds/','$vmName-$RGrandomWord-disk-lun-$($dataDisk.LUN).vhd')]^" -Path $jsonFile
-							Add-Content -Value "$($indents[7])}" -Path $jsonFile
-							Add-Content -Value "$($indents[6])}" -Path $jsonFile
-							Write-LogInfo "Added unmanaged $($dataDisk.DiskSizeInGB)GB Datadisk to $($dataDisk.LUN)."
-						}
-						$dataDiskAdded = $true
+			Add-Content -Value "$($indents[5])^dataDisks^ : " -Path $jsonFile
+			Add-Content -Value "$($indents[5])[" -Path $jsonFile
+			foreach ( $dataDisk in $newVM.DataDisk ) {
+				if ( $dataDisk.LUN -ge 0 ) {
+					if ( $dataDiskAdded ) {
+						Add-Content -Value "$($indents[6])," -Path $jsonFile
 					}
+					if ($UseManagedDisks) {
+						Add-Content -Value "$($indents[6]){" -Path $jsonFile
+						Add-Content -Value "$($indents[7])^name^: ^$vmName-disk-lun-$($dataDisk.LUN)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^diskSizeGB^: ^$($dataDisk.DiskSizeInGB)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^lun^: ^$($dataDisk.LUN)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^createOption^: ^Empty^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^caching^: ^$($dataDisk.HostCaching)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^managedDisk^:" -Path $jsonFile
+						Add-Content -Value "$($indents[7]){" -Path $jsonFile
+						Add-Content -Value "$($indents[8])^storageAccountType^: ^$StorageAccountType^" -Path $jsonFile
+						Add-Content -Value "$($indents[7])}" -Path $jsonFile
+						Add-Content -Value "$($indents[6])}" -Path $jsonFile
+						Write-LogInfo "Added managed $($dataDisk.DiskSizeInGB)GB Datadisk to $($dataDisk.LUN)."
+					}
+					else {
+						Add-Content -Value "$($indents[6]){" -Path $jsonFile
+						Add-Content -Value "$($indents[7])^name^: ^$vmName-disk-lun-$($dataDisk.LUN)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^diskSizeGB^: ^$($dataDisk.DiskSizeInGB)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^lun^: ^$($dataDisk.LUN)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^createOption^: ^Empty^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^caching^: ^$($dataDisk.HostCaching)^," -Path $jsonFile
+						Add-Content -Value "$($indents[7])^vhd^:" -Path $jsonFile
+						Add-Content -Value "$($indents[7]){" -Path $jsonFile
+						Add-Content -Value "$($indents[8])^uri^: ^[concat('http://',variables('StorageAccountName'),'.blob.core.windows.net/vhds/','$vmName-$RGrandomWord-disk-lun-$($dataDisk.LUN).vhd')]^" -Path $jsonFile
+						Add-Content -Value "$($indents[7])}" -Path $jsonFile
+						Add-Content -Value "$($indents[6])}" -Path $jsonFile
+						Write-LogInfo "Added unmanaged $($dataDisk.DiskSizeInGB)GB Datadisk to $($dataDisk.LUN)."
+					}
+					$dataDiskAdded = $true
 				}
-				Add-Content -Value "$($indents[5])]" -Path $jsonFile
 			}
+			Add-Content -Value "$($indents[5])]" -Path $jsonFile
 			Add-Content -Value "$($indents[4])}" -Path $jsonFile
 			Add-Content -Value "$($indents[4])," -Path $jsonFile
 			#endregion
