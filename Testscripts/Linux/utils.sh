@@ -2340,7 +2340,7 @@ function install_fio () {
 	update_repos
 	case "$DISTRO_NAME" in
 		oracle|rhel|centos)
-			install_epel
+			#install_epel
 			if [[ "${DISTRO_VERSION}" == "7.8" ]]; then
 				yum install -y libpmem-devel
 			fi
@@ -2425,7 +2425,7 @@ function install_iperf3 () {
 	update_repos
 	case "$DISTRO_NAME" in
 		oracle|rhel|centos)
-			install_epel
+			#install_epel
 			yum -y --nogpgcheck install iperf3 sysstat bc psmisc wget
 			iptables -F
 			;;
@@ -2555,7 +2555,7 @@ function install_lagscope () {
 	update_repos
 	case "$DISTRO_NAME" in
 		oracle|rhel|centos)
-			install_epel
+			#install_epel
 			yum -y --nogpgcheck install libaio sysstat git bc make gcc wget cmake
 			build_lagscope "${1}"
 			iptables -F
