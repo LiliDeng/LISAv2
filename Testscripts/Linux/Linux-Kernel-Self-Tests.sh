@@ -89,7 +89,7 @@ function install_dependencies() {
             rpm_packages=(make git gcc flex bison clang llvm fuse libcap-ng-devel popt-devel \
                         libcap-devel glibc-devel.*i686 fuse-devel elfutils-devel \
                         numactl-devel glibc-devel)
-            if [[ $DISTRO != centos_8 ]]; then
+            if [[ $DISTRO != centos_8 ]] && [[ $DISTRO != redhat_7 ]]; then
                 rpm_packages+=(libmount-devel glibc-static)
             fi
             install_epel
@@ -111,19 +111,19 @@ function install_dependencies() {
 }
 
 function download_custom_kernel() {
-    cd /root
+    cd /mnt
     if [[ $KERNEL_VERSION =~ "next" ]]; then
         version=${KERNEL_VERSION#*-}
         LogMsg "Kernel source git: $next_kernel_src"
         git clone $next_kernel_src
         check_exit_status "Clone next kernel source code" "exit"
-        LKS_SRCDIR="/root/linux-next"
+        LKS_SRCDIR="/mnt/linux-next"
     else
         version=${KERNEL_VERSION%%[^.&^0-9]*}
         LogMsg "Kernel source git: $stable_kernel_src"
         git clone $stable_kernel_src
         check_exit_status "Clone stable kernel source code" "exit"
-        LKS_SRCDIR="/root/linux"
+        LKS_SRCDIR="/mnt/linux"
     fi
 
     cd $LKS_SRCDIR
@@ -187,7 +187,7 @@ function download_distro_kernel() {
             src_version="c$VERSION_ID"
             LogMsg "Kernel source git: https://git.centos.org/git/rpms/kernel.git"
             LogMsg "Kernel source https://git.centos.org/git/centos-git-common.git"
-            cd /root
+            cd /mnt
             git clone https://git.centos.org/git/rpms/kernel.git
             git clone https://git.centos.org/git/centos-git-common.git
             if [[ -d "kernel" && -d "centos-git-common" ]]; then
@@ -198,7 +198,7 @@ function download_distro_kernel() {
                     cd SOURCES
                     xz -d linux-*.tar.xz
                     tar -xf linux-*.tar
-                    LKS_SRCDIR="/root/kernel/SOURCES/linux-*"
+                    LKS_SRCDIR="/mnt/kernel/SOURCES/linux-*"
                 else
                     LogErr "Can't find SOURCES directory"
                     return 1
@@ -388,10 +388,10 @@ if [[ $DISTRO =~ "ubuntu" && $KERNEL_VERSION != *azure*
 elif [[ "$LKS_VERSION_GIT_TAG" != "" ]]; then
     LogMsg "Kernel source git: $stable_kernel_src"
     LogMsg "Kernel git tag: $LKS_VERSION_GIT_TAG"
-    cd /root
+    cd /mnt
     git clone $stable_kernel_src
     check_exit_status "Clone stable kernel source code" "exit"
-    LKS_SRCDIR="/root/linux"
+    LKS_SRCDIR="/mnt/linux"
     cd "$LKS_SRCDIR"
     git checkout "$LKS_VERSION_GIT_TAG"
 else
