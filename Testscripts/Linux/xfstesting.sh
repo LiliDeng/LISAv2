@@ -43,7 +43,7 @@ ConfigureXFSTestTools() {
         ;;
 
         redhat*|centos*|fedora*)
-            pack_list=(libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel xfsprogs-qa-devel zlib-devel btrfs-progs-devel llvm-ocaml-devel uuid-devel)
+            pack_list=(libacl-devel libaio-devel libattr-devel libuuid-devel sqlite xfsdump xfsprogs-devel xfsprogs-qa-devel zlib-devel btrfs-progs-devel uuid-devel)
             which python || [ -f /usr/libexec/platform-python ] && ln -s /usr/libexec/platform-python /sbin/python
         ;;
 
@@ -59,7 +59,7 @@ ConfigureXFSTestTools() {
     # Install common & specific dependencies
     update_repos
     install_fio
-    pack_list+=(acl attr automake bc cifs-utils dos2unix dump e2fsprogs gawk gcc git libtool lvm2 make parted quota sed xfsdump xfsprogs indent python)
+    pack_list+=(acl attr automake bc cifs-utils dos2unix dump e2fsprogs gawk gcc git libtool lvm2 make parted quota sed xfsdump indent python)
     for package in "${pack_list[@]}"; do
         check_package "$package"
         if [ $? -eq 0 ]; then
