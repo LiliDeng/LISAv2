@@ -282,7 +282,7 @@ Run_Ntttcp()
 			tx_log_prefix="sender-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			rx_log_prefix="receiver-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} ${bufferLength}k Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
-			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -u -b ${bufferLength}k -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
+			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -u -b ${bufferLength}k -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
 			if [[ "$mode" == "multi-clients" ]];
 			then
 				server_ntttcp_cmd+=" -M"
@@ -292,7 +292,7 @@ Run_Ntttcp()
 			tx_log_prefix="sender-${testType}-p${num_threads_P}X${num_threads_n}.log"
 			rx_log_prefix="receiver-${testType}-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
-			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
+			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
 			if [[ "$mode" == "multi-clients" ]];
 			then
 				server_ntttcp_cmd+=" -M"
