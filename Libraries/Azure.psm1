@@ -2099,6 +2099,7 @@ Function Invoke-ResourceGroupDeployment([string]$RGName, $TemplateFile, $UseExis
 			$operationStatus = $createRGDeployment.ProvisioningState
 			if ($operationStatus -eq "Succeeded") {
 				Write-LogInfo "Resource Group Deployment created. Sleep 120 seconds."
+				start-Sleep 120
 				$retValue = $true
 			}
 			else {
