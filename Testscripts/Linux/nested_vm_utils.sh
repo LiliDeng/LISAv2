@@ -69,6 +69,7 @@ Install_KVM_Dependencies()
         if [ $? -eq 0 ]; then
             install_package qemu-system-x86
         fi
+        install_package dnsmasq
         [ -f /usr/libexec/qemu-kvm ] && ln -s /usr/libexec/qemu-kvm /sbin/qemu-system-x86_64
     fi
     which qemu-system-x86_64
