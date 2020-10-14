@@ -369,7 +369,7 @@ function Install_Dpdk () {
 		ssh ${1} " echo '/usr/local/lib' >> /etc/ld.so.conf"
 		ssh ${1} "ldconfig"
 	fi
-	ssh ${1} "ln -s /usr/sbin/dpdk-testpmd /usr/local/bin/dpdk-testpmd"
+	ssh ${1} "ln -s /usr/local/bin/dpdk-testpmd /usr/sbin/dpdk-testpmd"
 	LogMsg "Finished installing dpdk on ${1}"
 }
 
