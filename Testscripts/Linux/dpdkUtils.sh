@@ -194,7 +194,7 @@ function Install_Dpdk () {
 			if [ $? -eq 0 ]; then
 				packages+=("elfutils-libelf-devel")
 			fi
-			if [ "${DISTRO_NAME}" = "rhel" ]; then
+			if [ "${DISTRO_NAME}" = "rhel" ] || [ "${DISTRO_NAME}" = "centos" ]; then
 				# meson requires ninja-build and python-devel to be installed. [ninja-build ref: https://pkgs.org/download/ninja-build]
 				if [[ ${DISTRO_VERSION} == *"8."* ]]; then
 					ssh "${1}" ". utils.sh && install_package python3-devel"
