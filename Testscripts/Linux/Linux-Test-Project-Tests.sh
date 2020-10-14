@@ -72,7 +72,7 @@ case $DISTRO in
     "redhat"* | "centos"* | "fedora"*)
 		rpm_packages=(git libaio-devel libattr libcap-devel libdb)
 		# this must be revised later once epel_8 is available
-		if [[ $DISTRO != redhat_8 ]]; then
+		if [[ $DISTRO != redhat_8 ]] && [[ $DISTRO != centos_8 ]]; then
 			rpm_packages+=(db4-utils)
 		fi
 		install_epel
