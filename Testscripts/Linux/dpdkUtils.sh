@@ -200,6 +200,8 @@ function Install_Dpdk () {
 					ssh "${1}" ". utils.sh && install_package python3-devel"
 					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/ninja-build-1.8.2-1.el8.x86_64.rpm"
 					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/meson-0.49.2-1.el8.noarch.rpm"
+				elif [[ ${DISTRO_VERSION} == "7"* ]]; then
+					packages+=(meson)
 				else
 					# Required as meson is dependent on python36
 					ssh "${1}" ". utils.sh && install_package rh-python36 ninja-build"
