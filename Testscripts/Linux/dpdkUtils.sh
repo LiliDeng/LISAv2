@@ -196,7 +196,7 @@ function Install_Dpdk () {
 			fi
 			if [ "${DISTRO_NAME}" = "rhel" ] || [ "${DISTRO_NAME}" = "centos" ]; then
 				# meson requires ninja-build and python-devel to be installed. [ninja-build ref: https://pkgs.org/download/ninja-build]
-				if [[ ${DISTRO_VERSION} == *"8."* ]]; then
+				if [[ ${DISTRO_VERSION} == "8."* ]]; then
 					ssh "${1}" ". utils.sh && install_package python3-devel"
 					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/ninja-build-1.8.2-1.el8.x86_64.rpm"
 					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/meson-0.49.2-1.el8.noarch.rpm"
