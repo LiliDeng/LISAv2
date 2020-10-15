@@ -119,11 +119,13 @@ function Main() {
 			req_pkg="redhat-rpm-config rpm-build gcc gcc-gfortran libdb-devel gcc-c++ glibc-devel zlib-devel numactl numactl-devel binutils-devel iptables-devel libstdc++-devel libselinux-devel elfutils-devel libtool java libstdc++.i686 gtk2 atk cairo tcl tk createrepo byacc.x86_64 net-tools tcsh"
 			install_package $req_pkg
 			LogMsg "$?: Installed required packages $req_pkg"
-			if [[ ! $(grep 7.8 /etc/redhat-release) ]]; then
-				req_pkg="valgrind-devel libmnl-devel libnl3-devel"
-				install_package $req_pkg
-				LogMsg "$?: Installed required packages $req_pkg"
-			fi
+			pack_list=(valgrind-devel libmnl-devel libnl3-devel)
+			for package in "${pack_list[@]}"; do
+				check_package "$package"
+				if [ $? -eq 0 ]; then
+					install_package "$package"
+				fi
+			done
 			install_package $req_pkg
 			LogMsg "$?: Installed required packages $req_pkg"
 			# libibverbs-devel and libibmad-devel have broken dependencies on Centos 7.6
@@ -139,7 +141,8 @@ function Main() {
 					LogMsg "$?: Installed $req_pkg"
 				;;
 				redhat_8|centos_8)
-					req_pkg="python3-devel python2-devel python2-setuptools"
+					yum-config-manager --add-repo=http://mirror.centos.org/centos/8/PowerTools/x86_64/os/
+					req_pkg="python3-devel python2-devel python2-setuptools libmnl-devel"
 					install_package $req_pkg
 					LogMsg "$?: Installed $req_pkg"
 				;;
