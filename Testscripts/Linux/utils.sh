@@ -3853,3 +3853,30 @@ function found_sys_log() {
 		return 0
 	fi
 }
+
+function install_kernel_devel() {
+	package_name=$1
+	rpm -q --quiet $package_name
+	if [ $? -ne 0 ]; then
+		sudo yum -y --nogpgcheck install $package_name
+		if [ $? -ne 0 ]; then
+			devel_source=("7.=http://mirror.centos.org/centos/7/updates/x86_64/Packages/"
+			"8.=http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/")
+			for source in "${devel_source[@]}" ; do
+				KEY="${source%%=*}"
+				if [[ ${DISTRO_VERSION} == *"$KEY"* ]]; then
+					VALUE="${source##*=}"
+					LogMsg "rpm -ivh ${VALUE}/$package_name.rpm"
+					rpm -ivh ${VALUE}/$package_name.rpm
+					if [ $? -ne 0 ]; then
+						LogMsg "Install ${VALUE}/$package_name.rpm failed."
+					fi
+				fi
+			done
+		else
+			LogMsg "$package_name is installed successfully."
+		fi
+	else
+		LogMsg "$package_name has been installed."
+	fi
+}

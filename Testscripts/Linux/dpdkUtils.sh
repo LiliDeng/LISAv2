@@ -131,10 +131,10 @@ function Install_Dpdk_Dependencies() {
 			# we have to update the repositories first
 			ssh ${install_ip} "yum -y --nogpgcheck install centos-release"
 			ssh ${install_ip} "yum clean all"
-			ssh ${install_ip} "yum makecache"
 			yum_flags="--enablerepo=C*-base --enablerepo=C*-updates"
+			ssh ${install_ip} ". utils.sh && install_kernel_devel kernel-devel-$(uname -r)"
 		fi
-		ssh ${install_ip} "yum install --nogpgcheck ${yum_flags} --setopt=skip_missing_names_on_install=False -y gcc make git tar wget dos2unix psmisc kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel libmnl-devel meson"
+		ssh ${install_ip} "yum install --nogpgcheck ${yum_flags} --setopt=skip_missing_names_on_install=False -y gcc make git tar wget dos2unix psmisc numactl-devel.x86_64 librdmacm-devel libmnl-devel meson"
 
 	elif [[ "${distro}" == "sles15" ]]; then
 		local kernel=$(uname -r)
@@ -180,19 +180,8 @@ function Install_Dpdk () {
 			fi
 			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
 			check_exit_status "Install Infiniband Support on ${1}" "exit"
-			devel_source=(  "7.5=http://vault.centos.org/7.5.1804/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			                "7.6=http://vault.centos.org/7.6.1810/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			                "8.1=http://vault.centos.org//8.1.1911/BaseOS/x86_64/os/Packages/kernel-devel-$(uname -r).rpm" )
-			curr_version=$(ssh "${1}" "grep -E '7.5|7.6|8.1' /etc/redhat-release")
-			for source in "${devel_source[@]}" ; do
-				KEY="${source%%=*}"
-				if [[ "$curr_version" == *"$KEY"* ]]; then
-					VALUE="${source##*=}"
-					LogMsg "Installing kernel-devel package for $KEY from $VALUE."
-					ssh "${1}" "rpm -ivh $VALUE"
-				fi
-			done
-			packages+=(kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel pkgconfig)
+			ssh "${1}" ". utils.sh && install_kernel_devel kernel-devel-$(uname -r)"
+			packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig)
 			ssh "${1}" "yum makecache"
 			check_package "libmnl-devel"
 			if [ $? -eq 0 ]; then

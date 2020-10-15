@@ -38,7 +38,8 @@ function build_test_vpp () {
 			ssh "${1}" "yum -y --nogpgcheck groupinstall 'Development Tools'"
 			check_exit_status "Install Development Tools on ${1}" "exit"
 			ssh "${1}" ". ${UTIL_FILE} && . ${DPDK_UTIL_FILE} && Install_Dpdk_Dependencies ${1} ${distro}"
-			packages=(kernel-devel-$(uname -r) librdmacm-devel redhat-lsb glibc-static \
+			ssh "${1}" ". ${UTIL_FILE} && install_kernel_devel (uname -r)"
+			packages=(librdmacm-devel redhat-lsb glibc-static \
 				apr-devel numactl-devel.x86_64 libmnl-devel \
 				check check-devel boost boost-devel selinux-policy selinux-policy-devel \
 				ninja-build libuuid-devel mbedtls-devel yum-utils openssl-devel python-devel \
