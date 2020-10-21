@@ -115,14 +115,14 @@ function InstallDockerEngine() {
             if [[ $DISTRO_VERSION == 8* ]];then
                 yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io --nobest
             elif [[ $DISTRO_VERSION == 7* ]];then
-tee /etc/yum.repos.d/docker.repo <<-'EOF'
-[dockerrepo]
-name=Docker Repository
-baseurl=https://download.docker.com/linux/centos/7/x86_64/stable
-enabled=1
-gpgcheck=1
-gpgkey=https://download.docker.com/linux/centos/gpg
-EOF
+# tee /etc/yum.repos.d/docker.repo <<-'EOF'
+# [dockerrepo]
+# name=Docker Repository
+# baseurl=https://download.docker.com/linux/centos/7/x86_64/stable
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://download.docker.com/linux/centos/gpg
+# EOF
                 yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-1.el7_6.noarch.rpm
                 yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io
             else
@@ -209,7 +209,7 @@ function RunDockerContainer() {
 # Function to install docker compose
 function InstallDockerCompose() {
     LogMsg "Download the current stable release of Docker Compose"
-    curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    curl --tlsv1 -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
     docker-compose --version
