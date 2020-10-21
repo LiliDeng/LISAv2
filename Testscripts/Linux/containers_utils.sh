@@ -111,7 +111,7 @@ function InstallDockerEngine() {
             LogMsg "Install package yum-utils."
             install_package "yum-utils"
             LogMsg "Add repo https://download.docker.com/linux/centos/docker-ce.repo."
-            #yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            yum-config-manager -y --add-repo https://download.docker.com/linux/centos/docker-ce.repo
             if [[ $DISTRO_VERSION == 8* ]];then
                 yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io --nobest
             elif [[ $DISTRO_VERSION == 7* ]];then
