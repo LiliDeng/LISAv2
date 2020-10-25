@@ -56,6 +56,7 @@ InstallDotnetSDK() {
         ;;
 
         centos*|redhat*)
+            yum update -y nss curl libcurl
             package_name=${package_name}.rpm
             package=https://packages.microsoft.com/config/${distro}/${id}/${package_name}
             if CheckDotnetSDKSupport $package;then
