@@ -116,7 +116,11 @@ function InstallDockerEngine() {
                 yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io --nobest
             elif [[ $DISTRO_VERSION == 7* ]];then
                 yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-1.el7_6.noarch.rpm
-                yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io
+                if [[ $DISTRO_VERSION =~ 7.3* ]] || [[ $DISTRO_VERSION =~ 7.4* ]];then
+                    yum install --nogpgcheck -y moby-runc moby-containerd docker-ce docker-ce-cli
+                else
+                    yum install --nogpgcheck -y docker-ce docker-ce-cli containerd.io
+                fi
             else
                 HandleSkip "Test not supported for RH/CentOS $DISTRO_VERSION" $ret
             fi
