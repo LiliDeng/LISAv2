@@ -2538,6 +2538,7 @@ function install_lagscope () {
 		oracle|rhel|centos)
 			install_epel
 			yum -y --nogpgcheck install libaio sysstat git bc make gcc wget cmake
+			yum update -y nss curl libcurl
 			build_lagscope "${1}"
 			iptables -F
 			systemctl stop firewalld.service || service firewalld stop
@@ -2611,6 +2612,7 @@ function install_ntttcp () {
 		oracle|rhel|centos)
 			install_epel
 			yum -y --nogpgcheck install wget libaio sysstat git bc make gcc dstat psmisc lshw cmake
+			yum update -y nss curl libcurl
 			build_ntttcp "${1}"
 			build_lagscope "${2}"
 			iptables -F
