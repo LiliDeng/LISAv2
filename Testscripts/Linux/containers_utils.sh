@@ -167,7 +167,7 @@ function BuildDockerImage() {
     [[ ! -z "$1" ]] && local container_img_name=$1
     [[ ! -z "$2" ]] && local docker_file=$2
 
-    docker build -t $container_img_name -f $docker_file . 1> ${DOCKER_BUILD_OUTPUT} 2>&1
+    docker build -t $container_img_name --network host -f $docker_file . 1> ${DOCKER_BUILD_OUTPUT} 2>&1
     if [ $? -ne 0 ]; then
         LogErr "docker image build failed: $(cat ${DOCKER_BUILD_OUTPUT})"
         return 1
@@ -201,7 +201,7 @@ function RunDockerContainer() {
 # Function to install docker compose
 function InstallDockerCompose() {
     LogMsg "Download the current stable release of Docker Compose"
-    curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    curl -L --tlsv1 "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
     docker-compose --version
