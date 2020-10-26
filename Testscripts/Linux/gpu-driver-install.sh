@@ -335,7 +335,7 @@ fi
 
 # Install dependencies
 install_gpu_requirements
-
+modprobe -r nouveau
 if [ "$driver" == "CUDA" ]; then
 	InstallCUDADrivers
 elif [ "$driver" == "GRID" ]; then
