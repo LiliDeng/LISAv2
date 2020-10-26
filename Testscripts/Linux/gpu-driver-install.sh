@@ -326,7 +326,7 @@ if [ $? != 0 ]; then
 fi
 
 # Validate the distro version eligibility
-skip_test
+#skip_test
 _state=$(cat state.txt)
 if [ $_state == "TestAborted" ]; then
 	LogErr "Stop test procedure here for state, $_state"
