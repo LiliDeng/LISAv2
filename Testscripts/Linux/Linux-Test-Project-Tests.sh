@@ -66,7 +66,8 @@ case $DISTRO in
     "ubuntu"* | "debian"*)
         deb_packages=(git libaio-dev libattr1 libcap-dev keyutils \
             libdb4.8 libberkeleydb-perl expect dh-autoreconf gdb \
-            libnuma-dev quota genisoimage db-util unzip exfat-utils)
+            libnuma-dev quota genisoimage db-util unzip exfat-utils \
+            libmnl-dev libmnl0 libnftnl-dev libnftnl11)
         install_package "${deb_packages[@]}"
         ;;
     "redhat"* | "centos"* | "fedora"*)
