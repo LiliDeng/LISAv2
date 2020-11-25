@@ -83,6 +83,10 @@ function Main {
 		Write-LogInfo "EXCEPTION : $ErrorMessage"
 	}
 	Finally {
+		$lspci_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "lspci" -runAsSudo
+		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
+			-metaData "Final lspci: $lspci_output" -checkValues "PASS,FAIL,ABORTED" `
+			-testName $currentTestData.testName
 		if (!$testResult) {
 			$testResult = "Aborted"
 		}
