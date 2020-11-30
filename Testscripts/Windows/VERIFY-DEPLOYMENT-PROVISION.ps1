@@ -139,6 +139,7 @@ function Main {
 			$vm = Add-AzVMDataDisk -VM $vm -Name $dataDiskName -CreateOption Attach -ManagedDiskId $dataDisk1.Id -Lun $lun
 			Start-Sleep -seconds 30
 			$ret_val = Update-AzVM -VM $vm -ResourceGroupName $AllVMData.ResourceGroupName
+			Write-LogInfo "Add disk #${lun}"
 		}
 		$ip_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "ip addr" -runAsSudo
 		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
@@ -147,7 +148,7 @@ function Main {
 
 		$fdisk_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "fdisk -l" -runAsSudo
 		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
-			-metaData "fdisk_output: $lspci_output" -checkValues "PASS,FAIL,ABORTED" `
+			-metaData "fdisk_output: $fdisk_output" -checkValues "PASS,FAIL,ABORTED" `
 			-testName $currentTestData.testName
 
 		$lspci_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "lspci" -runAsSudo
