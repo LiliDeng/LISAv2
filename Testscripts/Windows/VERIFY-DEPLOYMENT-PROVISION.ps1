@@ -91,8 +91,7 @@ function Main {
 		$vm.NetworkProfile.NetworkInterfaces.Item(0).primary = $true
 		Update-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -VM $vm | Out-Null
 
-		$size = Get-AzComputeResourceSku -Location $AllVMData.Location | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
-		$size.Capabilities
+		$size = Get-AzComputeResourceSku -Location $CurrentTestData.SetupConfig.TestLocation | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
 		$null = Stop-AzVM -ResourceGroup $AllVMData.ResourceGroupName -Name $AllVMData.RoleName -Force
 		# MaxNetworkInterfaces
 		[int]$interface_count = $size.Capabilities.MaxNetworkInterfaces - 1
