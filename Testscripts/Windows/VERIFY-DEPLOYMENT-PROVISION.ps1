@@ -94,9 +94,12 @@ function Main {
 		#$location = "westus2"
 		$size = Get-AzComputeResourceSku -Location $location | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
 		$null = Stop-AzVM -ResourceGroup $AllVMData.ResourceGroupName -Name $AllVMData.RoleName -Force
-		# MaxNetworkInterfaces
-		[int]$interface_count = $size.Capabilities[-1].Value - 1
-
+		foreach($c in $SIZE.Capabilities) {
+			if($c.name -eq "MaxDataDiskCount") { [int]$disk_count = $c.value}
+			if($c.name -eq "PremiumIO") { $isPremium = $c.value}
+			if($c.name -eq "AcceleratedNetworkingEnabled") { $sriov = $c.Value }
+			if($c.name -eq "MaxNetworkInterfaces") { [int]$interface_count = $c.Value - 1 }
+		}
 		for ($nicNr = 1; $nicNr -le $interface_count; $nicNr++) {
 			Write-LogInfo "Setting up NIC #${nicNr}"
 			$ipAddr = "10.0.0.${nicNr}0"
@@ -106,7 +109,7 @@ function Main {
 			# Add a new network interface
 			$ipConfig = New-AzNetworkInterfaceIpConfig -Name $ipConfigName -PrivateIpAddressVersion `
 				IPv4 -PrivateIpAddress $ipAddr -SubnetId $vnet.Subnets[0].Id
-			if ($size.Capabilities[-3].Value -eq $true) {
+			if ($sriov -eq $true) {
 				$nic = New-AzNetworkInterface -Name $nicName -ResourceGroupName $AllVMData.ResourceGroupName `
 					-Location $AllVMData.Location -IpConfiguration $ipConfig -Force -EnableAcceleratedNetworking
 			}
@@ -127,10 +130,9 @@ function Main {
 		# disk
 		$vm = Get-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName
 		$storageType = 'Standard_LRS'
-		if ($size.Capabilities[-10].Value -eq $true) {
+		if ($isPremium -eq $true) {
 			$storageType = 'Premium_LRS'
 		}
-		[int]$disk_count = $size.Capabilities[-12].Value
 		for ($diskNr = 1; $diskNr -le $disk_count; $diskNr++) {
 			$dataDiskName = $AllVMData.RoleName + "_datadisk$diskNr"
 			$diskConfig = New-AzDiskConfig -SkuName $storageType -Location $location -CreateOption Empty -DiskSizeGB 1024
