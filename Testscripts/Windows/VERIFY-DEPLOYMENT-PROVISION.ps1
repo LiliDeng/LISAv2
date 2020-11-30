@@ -94,7 +94,7 @@ function Main {
 		$size = Get-AzComputeResourceSku -Location $CurrentTestData.SetupConfig.TestLocation | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
 		$null = Stop-AzVM -ResourceGroup $AllVMData.ResourceGroupName -Name $AllVMData.RoleName -Force
 		# MaxNetworkInterfaces
-		[int]$interface_count = $size.Capabilities.MaxNetworkInterfaces - 1
+		[int]$interface_count = $size.Capabilities[-1].Value - 1
 
 		for ($nicNr = 1; $nicNr -le $interface_count; $nicNr++) {
 			Write-LogInfo "Setting up NIC #${nicNr}"
@@ -105,7 +105,7 @@ function Main {
 			# Add a new network interface
 			$ipConfig = New-AzNetworkInterfaceIpConfig -Name $ipConfigName -PrivateIpAddressVersion `
 				IPv4 -PrivateIpAddress $ipAddr -SubnetId $vnet.Subnets[0].Id
-			if ($size.Capabilities.AcceleratedNetworkingEnabled -eq 'True') {
+			if ($size.Capabilities[-3].Value -eq 'True') {
 				$nic = New-AzNetworkInterface -Name $nicName -ResourceGroupName $AllVMData.ResourceGroupName `
 					-Location $AllVMData.Location -IpConfiguration $ipConfig -Force -EnableAcceleratedNetworking
 			}
@@ -120,9 +120,8 @@ function Main {
 		Write-LogDbg "Updating VM $($AllVMData.RoleName) in RG $($AllVMData.ResourceGroupName)."
 		Update-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -VM $vm | Out-Null
 
-		$null = Start-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName  -NoWait
-		$null = Wait-ForVMToStartSSH -Ipv4addr $AllVMData.PublicIP -StepTimeout 600
-
+		$null = Start-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName
+		$AllVMData.PublicIP = (Get-AzPublicIpAddress -ResourceGroupName $AllVMData.ResourceGroupName).IpAddress
 		$lspci_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "lspci" -runAsSudo
 		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
 			-metaData "Final lspci: $lspci_output" -checkValues "PASS,FAIL,ABORTED" `
