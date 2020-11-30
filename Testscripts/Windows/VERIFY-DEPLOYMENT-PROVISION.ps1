@@ -90,8 +90,9 @@ function Main {
 		# Set the existing NIC as primary
 		$vm.NetworkProfile.NetworkInterfaces.Item(0).primary = $true
 		Update-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -VM $vm | Out-Null
-
-		$size = Get-AzComputeResourceSku -Location $CurrentTestData.SetupConfig.TestLocation | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
+		$location = $CurrentTestData.SetupConfig.TestLocation
+		$location = "westus2"
+		$size = Get-AzComputeResourceSku -Location $location | Where-Object {$_.Name -eq $AllVMData.InstanceSize}
 		$null = Stop-AzVM -ResourceGroup $AllVMData.ResourceGroupName -Name $AllVMData.RoleName -Force
 		# MaxNetworkInterfaces
 		[int]$interface_count = $size.Capabilities[-1].Value - 1
@@ -105,7 +106,7 @@ function Main {
 			# Add a new network interface
 			$ipConfig = New-AzNetworkInterfaceIpConfig -Name $ipConfigName -PrivateIpAddressVersion `
 				IPv4 -PrivateIpAddress $ipAddr -SubnetId $vnet.Subnets[0].Id
-			if ($size.Capabilities[-3].Value -eq 'True') {
+			if ($size.Capabilities[-3].Value -eq $true) {
 				$nic = New-AzNetworkInterface -Name $nicName -ResourceGroupName $AllVMData.ResourceGroupName `
 					-Location $AllVMData.Location -IpConfiguration $ipConfig -Force -EnableAcceleratedNetworking
 			}
@@ -122,6 +123,33 @@ function Main {
 
 		$null = Start-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName
 		$AllVMData.PublicIP = (Get-AzPublicIpAddress -ResourceGroupName $AllVMData.ResourceGroupName).IpAddress
+
+		# disk
+		$vm = Get-AzVM -ResourceGroupName $AllVMData.ResourceGroupName -Name $AllVMData.RoleName
+		$storageType = 'Standard_LRS'
+		if ($size.Capabilities[-10].Value -eq $true) {
+			$storageType = 'Premium_LRS'
+		}
+		[int]$disk_count = $size.Capabilities[-12].Value
+		for ($diskNr = 1; $diskNr -le $disk_count; $diskNr++) {
+			$dataDiskName = $AllVMData.RoleName + "_datadisk$diskNr"
+			$diskConfig = New-AzDiskConfig -SkuName $storageType -Location $location -CreateOption Empty -DiskSizeGB 1024
+			$dataDisk1 = New-AzDisk -DiskName $dataDiskName -Disk $diskConfig -ResourceGroupName $AllVMData.ResourceGroupName
+			$lun = [int]($diskNr-1)
+			$vm = Add-AzVMDataDisk -VM $vm -Name $dataDiskName -CreateOption Attach -ManagedDiskId $dataDisk1.Id -Lun $lun
+			Start-Sleep -seconds 30
+			$ret_val = Update-AzVM -VM $vm -ResourceGroupName $AllVMData.ResourceGroupName
+		}
+		$ip_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "ip addr" -runAsSudo
+		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
+			-metaData "ip addr: $ip_output" -checkValues "PASS,FAIL,ABORTED" `
+			-testName $currentTestData.testName
+
+		$fdisk_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "fdisk -l" -runAsSudo
+		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
+			-metaData "fdisk_output: $lspci_output" -checkValues "PASS,FAIL,ABORTED" `
+			-testName $currentTestData.testName
+
 		$lspci_output = Run-LinuxCmd -username $username -password $password -ip $AllVMData.PublicIP -port $AllVMData.SSHPort -command "lspci" -runAsSudo
 		$CurrentTestResult.TestSummary += New-ResultSummary -testResult "PASS" `
 			-metaData "Final lspci: $lspci_output" -checkValues "PASS,FAIL,ABORTED" `
