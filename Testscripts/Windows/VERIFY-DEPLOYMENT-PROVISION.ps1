@@ -133,6 +133,7 @@ function Main {
 		if ($isPremium -eq $true) {
 			$storageType = 'Premium_LRS'
 		}
+		$disk_count = 0
 		for ($diskNr = 1; $diskNr -le $disk_count; $diskNr++) {
 			$dataDiskName = $AllVMData.RoleName + "_datadisk$diskNr"
 			$diskConfig = New-AzDiskConfig -SkuName $storageType -Location $location -CreateOption Empty -DiskSizeGB 1024
