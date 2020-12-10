@@ -76,6 +76,7 @@ ConfigureXFSTestTools() {
     rm -rf $dbench_folder
     git clone $dbench_git_url $dbench_folder
     pushd $dbench_folder
+	git checkout 445cbd798b88b045437f5d703b57c7955e8e4383
     ./autogen.sh
     ./configure
     make -j $(nproc)
