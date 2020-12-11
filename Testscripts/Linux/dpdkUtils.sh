@@ -215,7 +215,7 @@ function Install_Dpdk () {
 				fi
 			else
 				if [[ "${DISTRO_NAME}" = "centos" && ${DISTRO_VERSION} == *"8."* ]]; then
-					dnf --enablerepo=PowerTools install -y meson
+					dnf --enablerepo=powertools install -y meson
 				else
 					packages+=(meson)
 				fi
