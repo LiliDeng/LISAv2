@@ -20,23 +20,17 @@
 
 CONSTANTS_FILE="./constants.sh"
 UTIL_FILE="./utils.sh"
-ICA_TESTABORTED="TestAborted"           # Error during the setup of the test
-
-UpdateTestState()
-{
-	echo "${1}" > ./state.txt
-}
 
 . ${CONSTANTS_FILE} || {
 	errMsg="Error: missing ${CONSTANTS_FILE} file"
 	LogMsg "${errMsg}"
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 10
 }
 . ${UTIL_FILE} || {
 	errMsg="Error: missing ${UTIL_FILE} file"
 	LogMsg "${errMsg}"
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 10
 }
 
@@ -44,21 +38,21 @@ if [ ! "${server}" ]; then
 	errMsg="Please add/provide value for server in constants.sh. server=<server ip>"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 1
 fi
 if [ ! "${client}" ]; then
 	errMsg="Please add/provide value for client in constants.sh. client=<client ip>"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 1
 fi
 if [ ! "${testDuration}" ]; then
 	errMsg="Please add/provide value for testDuration in constants.sh. testDuration=60"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 1
 fi
 
@@ -66,16 +60,17 @@ if [ ! "${nicName}" ]; then
 	errMsg="Please add/provide value for nicName in constants.sh. nicName=eth0/bond0"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	UpdateTestState $ICA_TESTABORTED
+	SetTestStateAborted
 	exit 1
 fi
 
+SetTestStateRunning
 # Make & build ntttcp on client and server Machine
 LogMsg "Configuring client ${client}..."
 Run_SSHCommand "${client}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${client}.."
-	UpdateTestState "TestAborted"
+	SetTestStateAborted
 	exit 1
 fi
 
@@ -83,7 +78,7 @@ LogMsg "Configuring server ${server}..."
 Run_SSHCommand "${server}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${server}.."
-	UpdateTestState "TestAborted"
+	SetTestStateAborted
 	exit 1
 fi
 
@@ -304,7 +299,7 @@ Run_Ntttcp()
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
-			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 1; done" &
+			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
 		fi
 
 
@@ -329,7 +324,7 @@ Run_Ntttcp()
 		Kill_Process "${server}" mpstat
 		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "${log_folder}/mpstat-${rx_log_prefix}" &
 
-		sleep 2
+		sleep 5
 		IFS=',' read -r -a array <<< "${client}"
 		for ip in "${array[@]}"
 		do
@@ -371,7 +366,7 @@ Run_Ntttcp()
 		fi
 		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
 		LogMsg "Parsing results for $current_test_threads connections"
-		sleep 10
+		sleep 5
 		tx_throughput_value=0.0
 		tx_cyclesperbytes_value=0.0
 		txpackets_sender_value=0.0
@@ -443,7 +438,7 @@ Run_Ntttcp()
 		fi
 		LogMsg "current test finished. wait for next one... "
 		i=$(($i + 1))
-		sleep 15
+		sleep 5
 	done
 }
 

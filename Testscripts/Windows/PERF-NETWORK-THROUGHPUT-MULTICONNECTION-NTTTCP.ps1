@@ -137,14 +137,31 @@ collect_VM_properties
         Copy-RemoteFiles -uploadTo $clientVMData.PublicIP -port $clientVMData.SSHPort -files $currentTestData.files -username "root" -password $password -upload
 
         Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "chmod +x *.sh" | Out-Null
-        $testJob = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "/root/StartNtttcpTest.sh" -RunInBackground
+        Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "/root/StartNtttcpTest.sh" -RunInBackground | Out-Null
         #endregion
 
         #region MONITOR TEST
-        while ((Get-Job -Id $testJob).State -eq "Running") {
-            $currentStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "tail -2 ntttcpConsoleLogs.txt | head -1"
-            Write-LogInfo "Current Test Status : $currentStatus"
-            Wait-Time -seconds 20
+        # Check the status of the run every minute
+        # If the run is longer than 2 hours, abort the test
+        $timeout = New-Timespan -Minutes 120
+        $sw = [diagnostics.stopwatch]::StartNew()
+        while ($sw.elapsed -lt $timeout) {
+            Start-Sleep -Seconds 60
+            $state = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password "cat state.txt" -ignoreLinuxExitCode
+            if ($state -eq "TestCompleted") {
+                Write-LogInfo "StartNtttcpTest.sh finished the run successfully!"
+                break
+            } elseif ($state -eq "TestFailed") {
+                Write-LogErr "StartNtttcpTest.sh failed on the VM!"
+                break
+            } elseif ($state -eq "TestAborted") {
+                Write-LogErr "StartNtttcpTest.sh aborted on the VM!"
+                break
+            } elseif ($state -eq "TestSkipped") {
+                Write-LogWarn "StartNtttcpTest.sh skipped on the VM!"
+                break
+            }
+            Write-LogInfo "StartNtttcpTest.sh is still running!"
         }
         $finalStatus = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -command "cat /root/state.txt"
         Copy-RemoteFiles -downloadFrom $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password -download -downloadTo $LogDir -files "/root/ntttcpConsoleLogs.txt"
