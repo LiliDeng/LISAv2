@@ -99,6 +99,7 @@ Install_KVM_Dependencies()
     if [ $? -eq 0 ]; then
         install_package dnsmasq
     fi
+    install_net_tools
 }
 
 Download_Image_Files()
