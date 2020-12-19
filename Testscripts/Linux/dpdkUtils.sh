@@ -215,7 +215,7 @@ function Install_Dpdk () {
 				fi
 			else
 				if [[ "${DISTRO_NAME}" = "centos" && ${DISTRO_VERSION} == *"8."* ]]; then
-					dnf --enablerepo=PowerTools install -y meson
+					ssh "${1}" "dnf --enablerepo=PowerTools install -y meson"
 				else
 					packages+=(meson)
 				fi
@@ -232,7 +232,7 @@ function Install_Dpdk () {
 			fi
 			ssh "${1}" ". utils.sh && CheckInstallLockUbuntu && add-apt-repository 'deb http://cz.archive.ubuntu.com/ubuntu eoan main universe' "
 			ssh "${1}" ". utils.sh && CheckInstallLockUbuntu && update_repos"
-			packages+=(librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev meson pkg-config)
+			packages+=(librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev meson pkg-config python3-pip)
 			;;
 		suse|opensuse|sles)
 			ssh "${1}" ". utils.sh && add_sles_network_utilities_repo"
@@ -366,6 +366,12 @@ function Install_Dpdk () {
 		if [[ ${DISTRO_NAME} == rhel ]] && ! [[ ${DISTRO_VERSION} == *"8."* ]]; then
 			ssh ${1} "cd ${LIS_HOME}/${DPDK_DIR} && PATH=$PATH:/opt/rh/rh-python36/root/usr/bin/ && meson ${RTE_TARGET}"
 		else
+			if [[ ${DISTRO_NAME} == ubuntu ]]; then
+				ssh "${1}" "pip3 install --upgrade meson"
+				ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
+				ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
+				ssh "${1}" "pip3 install --upgrade ninja"
+			fi
 			ssh ${1} "cd ${LIS_HOME}/${DPDK_DIR} && meson ${RTE_TARGET}"
 		fi
 		ssh "${1}" "cd $RTE_SDK/$RTE_TARGET && ninja 2>&1 && ninja install 2>&1 && ldconfig"
