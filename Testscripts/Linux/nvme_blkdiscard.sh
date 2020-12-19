@@ -53,7 +53,7 @@ Run_Blkdiscard() {
             LogMsg "Unmounted ${namespace}"
         fi
         # Run blkdiscard on partition
-        blkdiscard  -v "/dev/${namespace}p1"
+        blkdiscard -f -v "/dev/${namespace}p1"
         if [ $? -ne 0 ]; then
             LogErr "Failed to run blkdiscard on ${namespace}"
             SetTestStateFailed
