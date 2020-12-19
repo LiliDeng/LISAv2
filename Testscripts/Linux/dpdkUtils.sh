@@ -350,6 +350,13 @@ function Install_Dpdk () {
 		LogMsg "dpdk build with default DST IP ADDR on ${1}"
 	fi
 
+	if [[ ${DISTRO_NAME} == ubuntu ]]; then
+		ssh "${1}" "pip3 install --upgrade meson"
+		ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
+		ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
+		ssh "${1}" "pip3 install --upgrade ninja"
+	fi
+
 	LogMsg "MLX_PMD flag enabling on ${1}"
 	if type Dpdk_Configure > /dev/null; then
 		echo "Calling testcase provided Dpdk_Configure(1) on ${1}"
@@ -366,12 +373,6 @@ function Install_Dpdk () {
 		if [[ ${DISTRO_NAME} == rhel ]] && ! [[ ${DISTRO_VERSION} == *"8."* ]]; then
 			ssh ${1} "cd ${LIS_HOME}/${DPDK_DIR} && PATH=$PATH:/opt/rh/rh-python36/root/usr/bin/ && meson ${RTE_TARGET}"
 		else
-			if [[ ${DISTRO_NAME} == ubuntu ]]; then
-				ssh "${1}" "pip3 install --upgrade meson"
-				ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
-				ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
-				ssh "${1}" "pip3 install --upgrade ninja"
-			fi
 			ssh ${1} "cd ${LIS_HOME}/${DPDK_DIR} && meson ${RTE_TARGET}"
 		fi
 		ssh "${1}" "cd $RTE_SDK/$RTE_TARGET && ninja 2>&1 && ninja install 2>&1 && ldconfig"
