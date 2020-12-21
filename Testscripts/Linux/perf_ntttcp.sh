@@ -299,7 +299,7 @@ Run_Ntttcp()
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
-			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
+			#Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
 		fi
 
 

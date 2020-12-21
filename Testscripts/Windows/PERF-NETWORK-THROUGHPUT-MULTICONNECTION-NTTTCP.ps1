@@ -142,8 +142,8 @@ collect_VM_properties
 
         #region MONITOR TEST
         # Check the status of the run every minute
-        # If the run is longer than 2 hours, abort the test
-        $timeout = New-Timespan -Minutes 120
+        # If the run is longer than 2.5 hours, abort the test
+        $timeout = New-Timespan -Minutes 150
         $sw = [diagnostics.stopwatch]::StartNew()
         while ($sw.elapsed -lt $timeout) {
             Start-Sleep -Seconds 60

@@ -324,7 +324,7 @@ function Create-HyperVGroupDeployment([string]$HyperVGroupName, $HyperVGroupXML,
             $VMSwitches = Get-VMSwitch -ComputerName $HyperVHost | Where-Object {$InterfaceAliasWithInternet -like "*" + $_.Name + "*" } | Select-Object -First 1
             if ( $VirtualMachine.RoleName) {
                 $CurrentVMName = $HyperVGroupName + "-" + $VirtualMachine.RoleName
-                $CurrentVMOsVHDPath = "$DestinationOsVHDPath\$HyperVGroupName-$CurrentVMName-diff-OSDisk${vhdSuffix}"
+                $CurrentVMOsVHDPath = "$DestinationOsVHDPath\$CurrentVMName-diff-OSDisk${vhdSuffix}"
             } else {
                 $CurrentVMName = $HyperVGroupName + "-role-$i"
                 $CurrentVMOsVHDPath = "$DestinationOsVHDPath\$HyperVGroupName-role-$i-diff-OSDisk${vhdSuffix}"
@@ -461,6 +461,7 @@ function Start-HyperVGroupVMs($HyperVGroupName,$HyperVHost) {
         Write-LogInfo "Starting $($VM.Name) from $HyperVGroupName..."
         # ComputerName is inherited here from line 530. Don't add it
         # because Start-VM will fail
+        Set-IntegrationService $VM.Name $HyperVHost "Guest Service Interface" $true
         Start-VM -VM $VM
         if ( $? ) {
             Write-LogInfo "Succeeded."
