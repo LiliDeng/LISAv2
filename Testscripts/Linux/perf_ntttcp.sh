@@ -316,7 +316,7 @@ Run_Ntttcp()
 		Kill_Process "${server}" ntttcp
 		Kill_Process "${client}" ntttcp
 		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix} on server ${server}"
-		Run_SSHCommand "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} 2>&1 &" &
+		ssh "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} 2>&1 &" &
 		sleep 5
 		Run_SSHCommand "${server}" "ps aux | grep -i ntttcp" >> ntttcp_server.log
 		Run_SSHCommand "${server}" "echo =======================" >> ntttcp_server.log
@@ -364,7 +364,7 @@ Run_Ntttcp()
 		else
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
 			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
-			Run_SSHCommand "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
+			ssh "${client}" "${client_ntttcp_cmd} > ${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
 			Run_SSHCommand "${client}" "ps aux | grep -i ntttcp" >> ntttcp_client.log
 			Run_SSHCommand "${client}" "echo =======================" >> ntttcp_client.log
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
