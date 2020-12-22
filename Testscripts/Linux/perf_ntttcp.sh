@@ -369,7 +369,17 @@ Run_Ntttcp()
 			Run_SSHCommand "${client}" "echo =======================" >> ntttcp_client.log
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
-		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
+		sleep 20
+		retry_times=20
+		exit_status=1
+		while [ $exit_status -ne 0 ] && [ $retry_times -gt 0 ];
+		do
+			retry_times=$(expr $retry_times - 1)
+			LogMsg "Try to connect to the nested VM, left retry times: $retry_times"
+			scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
+			exit_status=$?
+		done
+
 		LogMsg "Parsing results for $current_test_threads connections"
 		sleep 5
 		tx_throughput_value=0.0
