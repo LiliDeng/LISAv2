@@ -299,7 +299,7 @@ Run_Ntttcp()
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
-			#Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
+			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
 		fi
 
 
@@ -315,8 +315,11 @@ Run_Ntttcp()
 		tx_lagscope_log_files=()
 		Kill_Process "${server}" ntttcp
 		Kill_Process "${client}" ntttcp
-		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix}"
-		ssh "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} &" &
+		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix} on server ${server}"
+		Run_SSHCommand "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} &" &
+		sleep 5
+		Run_SSHCommand "${server}" "ps aux | grep -i ntttcp" >> ntttcp_server.log
+		Run_SSHCommand "${server}" "=======================" >> ntttcp_server.log
 		Kill_Process "${server}" lagscope
 		Run_SSHCommand "${server}" "${lagscope_cmd} -r" &
 		Kill_Process "${server}" dstat
@@ -348,7 +351,7 @@ Run_Ntttcp()
 			do
 				client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${ip}" "${client_ntttcp_raw_cmd}")
 				LogMsg "Execute ${client_ntttcp_cmd} on ${ip}"
-				ssh "${ip}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
+				Run_SSHCommand "${ip}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
 				tx_ntttcp_log_files+=("${log_folder}/ntttcp-${ip}-${tx_log_prefix}")
 				sleep 5
 			done
@@ -356,12 +359,14 @@ Run_Ntttcp()
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${array[$(($index))]}" "${client_ntttcp_raw_cmd}")
 			client_ntttcp_cmd+=" -L"
 			LogMsg "Execute ${client_ntttcp_cmd} on ${array[$(($index))]}"
-			ssh "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
+			Run_SSHCommand "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
 			tx_ntttcp_log_files+=("${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}")
 		else
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
-			LogMsg "Execute ${client_ntttcp_cmd} on ${client}"
-			ssh "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix}"
+			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
+			Run_SSHCommand "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix}"
+			Run_SSHCommand "${client}" "ps aux | grep -i ntttcp" >> ntttcp_client.log
+			Run_SSHCommand "${client}" "=======================" >> ntttcp_client.log
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
 		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
