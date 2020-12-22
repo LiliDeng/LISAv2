@@ -236,8 +236,6 @@ Run_Ntttcp()
 {
 	i=0
 	data_loss=0
-	Kill_Process "${server}" ntttcp
-	Kill_Process "${client}" ntttcp
 
 	# Disable firewalld
 	Run_SSHCommand "${client}" "service firewalld stop"
@@ -268,6 +266,8 @@ Run_Ntttcp()
 		mode="multi-clients"
 	fi
 	for current_test_threads in "${testConnections[@]}"; do
+		Kill_Process "${server}" ntttcp
+		Kill_Process "${client}" ntttcp
 		test_threads=$(($current_test_threads/$client_count))
 		if [[ $test_threads -lt $max_server_threads ]];
 		then
@@ -316,10 +316,10 @@ Run_Ntttcp()
 		Kill_Process "${server}" ntttcp
 		Kill_Process "${client}" ntttcp
 		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix} on server ${server}"
-		Run_SSHCommand "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} &" &
+		Run_SSHCommand "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} 2>&1 &" &
 		sleep 5
 		Run_SSHCommand "${server}" "ps aux | grep -i ntttcp" >> ntttcp_server.log
-		Run_SSHCommand "${server}" "=======================" >> ntttcp_server.log
+		Run_SSHCommand "${server}" "echo =======================" >> ntttcp_server.log
 		Kill_Process "${server}" lagscope
 		Run_SSHCommand "${server}" "${lagscope_cmd} -r" &
 		Kill_Process "${server}" dstat
@@ -364,9 +364,9 @@ Run_Ntttcp()
 		else
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
 			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
-			Run_SSHCommand "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix}"
+			Run_SSHCommand "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
 			Run_SSHCommand "${client}" "ps aux | grep -i ntttcp" >> ntttcp_client.log
-			Run_SSHCommand "${client}" "=======================" >> ntttcp_client.log
+			Run_SSHCommand "${client}" "echo =======================" >> ntttcp_client.log
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
 		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
