@@ -244,8 +244,7 @@ Run_Ntttcp()
 	Run_SSHCommand "${server}" "mkdir -p ${log_folder}"
 	Run_SSHCommand "${client}" "mkdir -p ${log_folder}"
 	result_file="${log_folder}/report.csv"
-	if [[ $testType == "udp" ]];
-	then
+	if [[ $testType == "udp" ]]; then
 		bufferLength=$(($bufferLength/1024))
 		echo "test_connections,tx_throughput_in_Gbps,rx_throughput_in_Gbps,datagram_loss_in_%" > "${result_file}"
 		core_mem_set_cmd="sysctl -w net.core.rmem_max=67108864; sysctl -w net.core.rmem_default=67108864; sysctl -w net.core.wmem_default=67108864; sysctl -w net.core.wmem_max=67108864"
@@ -261,8 +260,7 @@ Run_Ntttcp()
 
 	IFS=',' read -r -a array <<< "$client"
 	client_count=${#array[@]}
-	if [ "$client_count" -gt 1 ];
-	then
+	if [ "$client_count" -gt 1 ]; then
 		mode="multi-clients"
 	fi
 	for current_test_threads in "${testConnections[@]}"; do
@@ -278,14 +276,12 @@ Run_Ntttcp()
 			num_threads_n=$(($test_threads/$num_threads_P))
 		fi
 
-		if [[ $testType == "udp" ]];
-		then
+		if [[ $testType == "udp" ]]; then
 			tx_log_prefix="sender-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			rx_log_prefix="receiver-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} ${bufferLength}k Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
 			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -u -b ${bufferLength}k -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
-			if [[ "$mode" == "multi-clients" ]];
-			then
+			if [[ "$mode" == "multi-clients" ]]; then
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -u -b ${bufferLength}k -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
@@ -294,8 +290,7 @@ Run_Ntttcp()
 			rx_log_prefix="receiver-${testType}-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
 			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
-			if [[ "$mode" == "multi-clients" ]];
-			then
+			if [[ "$mode" == "multi-clients" ]]; then
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
@@ -313,13 +308,9 @@ Run_Ntttcp()
 		rx_ntttcp_log_file="${log_folder}/ntttcp-${rx_log_prefix}"
 		tx_ntttcp_log_files=()
 		tx_lagscope_log_files=()
-		Kill_Process "${server}" ntttcp
-		Kill_Process "${client}" ntttcp
 		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix} on server ${server}"
 		ssh "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} 2>&1 &" &
-		sleep 5
-		Run_SSHCommand "${server}" "ps aux | grep -i ntttcp" >> ntttcp_server.log
-		Run_SSHCommand "${server}" "echo =======================" >> ntttcp_server.log
+		sleep 10
 		Kill_Process "${server}" lagscope
 		Run_SSHCommand "${server}" "${lagscope_cmd} -r" &
 		Kill_Process "${server}" dstat
@@ -327,7 +318,6 @@ Run_Ntttcp()
 		Kill_Process "${server}" mpstat
 		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "${log_folder}/mpstat-${rx_log_prefix}" &
 
-		sleep 5
 		IFS=',' read -r -a array <<< "${client}"
 		for ip in "${array[@]}"
 		do
@@ -342,8 +332,7 @@ Run_Ntttcp()
 			tx_lagscope_log_files+=("${log_folder}/lagscope-${ip}-${tx_log_prefix}")
 		done
 
-		if [[ "$mode" == "multi-clients" ]];
-		then
+		if [[ "$mode" == "multi-clients" ]]; then
 			IFS=',' read -r -a array <<< "${client}"
 			index=$(($client_count -1))
 			client_ntttcp_raw_cmd="$client_ntttcp_cmd"
@@ -365,23 +354,11 @@ Run_Ntttcp()
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
 			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
 			ssh "${client}" "${client_ntttcp_cmd} > ${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
-			Run_SSHCommand "${client}" "ps aux | grep -i ntttcp" >> ntttcp_client.log
-			Run_SSHCommand "${client}" "echo =======================" >> ntttcp_client.log
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
-		sleep 20
-		retry_times=20
-		exit_status=1
-		while [ $exit_status -ne 0 ] && [ $retry_times -gt 0 ];
-		do
-			retry_times=$(expr $retry_times - 1)
-			LogMsg "Try to connect to the nested VM, left retry times: $retry_times"
-			scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
-			exit_status=$?
-		done
-
+		sleep 30
+		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
 		LogMsg "Parsing results for $current_test_threads connections"
-		sleep 5
 		tx_throughput_value=0.0
 		tx_cyclesperbytes_value=0.0
 		txpackets_sender_value=0.0
@@ -419,8 +396,7 @@ Run_Ntttcp()
 		done
 		avg_latency=$avg_latency_value
 		rx_cyclesperbytes=$(Get_CyclesPerBytes "$rx_ntttcp_log_file")
-		if [[ $tx_throughput == "0.00" ]];
-		then
+		if [[ $tx_throughput == "0.00" ]]; then
 			data_loss=$(printf %.2f 0)
 		else
 			data_loss=$(printf %.2f $(echo "scale=5; 100*(($tx_throughput-$rx_throughput)/$tx_throughput)" | ${bc_cmd}))
@@ -444,8 +420,7 @@ Run_Ntttcp()
 		LogMsg "Connections created time: $concreatedtime_us"
 		LogMsg "Retrasmit segments: $retrans_segs"
 
-		if [[ $testType == "udp" ]];
-		then
+		if [[ $testType == "udp" ]]; then
 			echo "$current_test_threads,$tx_throughput,$rx_throughput,$data_loss" >> "${result_file}"
 		else
 			testType="tcp"
@@ -453,7 +428,7 @@ Run_Ntttcp()
 		fi
 		LogMsg "current test finished. wait for next one... "
 		i=$(($i + 1))
-		sleep 5
+		sleep 30
 	done
 }
 
