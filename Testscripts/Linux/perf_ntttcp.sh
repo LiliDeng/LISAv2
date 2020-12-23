@@ -353,7 +353,7 @@ Run_Ntttcp()
 		else
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
 			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
-			"${client_ntttcp_cmd} > ${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
+			bash -c "${client_ntttcp_cmd} > ${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
 		sleep 30
