@@ -134,11 +134,11 @@ function Install_Dpdk_Dependencies() {
 			ssh ${install_ip} "yum makecache"
 			yum_flags="--enablerepo=C*-base --enablerepo=C*-updates"
 		fi
-		ssh ${install_ip} "yum install --nogpgcheck ${yum_flags} --setopt=skip_missing_names_on_install=False -y gcc make git tar wget dos2unix psmisc kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel libmnl-devel meson"
+		ssh ${install_ip} "yum install --nogpgcheck ${yum_flags} --setopt=skip_missing_names_on_install=False -y gcc make git tar wget psmisc kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel libmnl-devel meson"
 
 	elif [[ "${distro}" =~ sles15* ]]; then
 		local kernel=$(uname -r)
-		dependencies_install_command="zypper --no-gpg-checks --non-interactive --gpg-auto-import-keys install gcc make git tar wget dos2unix psmisc libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel meson"
+		dependencies_install_command="zypper --no-gpg-checks --non-interactive --gpg-auto-import-keys install gcc make git tar wget psmisc libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel meson"
 		if [[ "${kernel}" == *azure ]]; then
 			ssh "${install_ip}" "zypper install --oldpackage -y kernel-azure-devel=${kernel::-6}"
 			dependencies_install_command="${dependencies_install_command} kernel-devel-azure"
@@ -173,7 +173,7 @@ function Install_Dpdk () {
 	SetTestStateRunning
 	LogMsg "Configuring ${1} ${DISTRO_NAME} ${DISTRO_VERSION} for DPDK test..."
 	# packages=(gcc make git tar wget dos2unix psmisc make)
-	packages=(python3-pip)
+	packages=(gcc make git tar wget python3-pip)
 	case "${DISTRO_NAME}" in
 		oracle|rhel|centos)
 			# if ! ([ "${DISTRO_NAME}" = "rhel" ] && [[ ${DISTRO_VERSION} == *"8."* ]]) ;then
