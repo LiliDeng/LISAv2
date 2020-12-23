@@ -2594,6 +2594,7 @@ function build_ntttcp () {
 	fi
 	if [ $ntttcp_version == "master" ]; then
 		git clone https://github.com/Microsoft/ntttcp-for-linux.git
+		cd ntttcp-for-linux && git checkout 213371f3b0f1b134a80c0157677d8c1cf640bbf1 && cd ..
 		pushd ntttcp-for-linux/src/ && make && make install
 	else
 		wget https://github.com/Microsoft/ntttcp-for-linux/archive/${ntttcp_version}.tar.gz
