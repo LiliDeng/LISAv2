@@ -146,7 +146,7 @@ collect_VM_properties
         $timeout = New-Timespan -Minutes 150
         $sw = [diagnostics.stopwatch]::StartNew()
         while ($sw.elapsed -lt $timeout) {
-            Start-Sleep -Seconds 120
+            Start-Sleep -Seconds 300
             $state = Run-LinuxCmd -ip $clientVMData.PublicIP -port $clientVMData.SSHPort -username "root" -password $password "cat state.txt" -ignoreLinuxExitCode
             if ($state -eq "TestCompleted") {
                 Write-LogInfo "StartNtttcpTest.sh finished the run successfully!"

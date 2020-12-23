@@ -30,7 +30,6 @@ if [[ $usesshkey == "True" ]]; then
     sed -i 's/.*PermitEmptyPasswords.*/PermitEmptyPasswords yes/g' $sshd_configFilePath
     sed -i 's/.*ClientAliveInterval.*/ClientAliveInterval 1200/g' $sshd_configFilePath
     echo 'ClientAliveCountMax 1000' >> $sshd_configFilePath
-    echo 'ServerAliveInterval 1000' >> $sshd_configFilePath
 else
     password=$password
     usermod --password $(echo "$password" | openssl passwd -1 -stdin) root
