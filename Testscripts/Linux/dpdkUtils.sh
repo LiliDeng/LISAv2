@@ -180,17 +180,7 @@ function Install_Dpdk () {
 			fi
 			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
 			check_exit_status "Install Infiniband Support on ${1}" "exit"
-			# release=$(cat /etc/redhat-release)
-			# release=($release)
-			# release=${release[3]}
-			# if grep -E '7.' /etc/redhat-release; then
-			# 	rpm_url="http://vault.centos.org/${release}/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			# fi
-			# if grep -E '8.' /etc/redhat-release; then
-			# 	rpm_url="http://vault.centos.org/$release/BaseOS/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			# fi
-			# ssh "${1}" "rpm -ivh $rpm_url"
-			packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig)
+			packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig python3-pip)
 			ssh "${1}" "yum makecache"
 			check_package "libmnl-devel"
 			if [ $? -eq 0 ]; then
@@ -200,24 +190,11 @@ function Install_Dpdk () {
 			if [ $? -eq 0 ]; then
 				packages+=("elfutils-libelf-devel")
 			fi
-			if [[ "${DISTRO_NAME}" = "rhel" ]]; then
-				# meson requires ninja-build and python-devel to be installed. [ninja-build ref: https://pkgs.org/download/ninja-build]
-				if [[ ${DISTRO_VERSION} == *"8."* ]]; then
-					ssh "${1}" ". utils.sh && install_package python3-devel"
-					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/ninja-build-1.8.2-1.el8.x86_64.rpm"
-					ssh "${1}" "rpm -ivh http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/meson-0.49.2-1.el8.noarch.rpm"
-				else
-					# Required as meson is dependent on python36
-					ssh "${1}" ". utils.sh && install_package rh-python36 ninja-build"
-					ssh "${1}" 'PATH=$PATH:/opt/rh/rh-python36/root/usr/bin/ && pip install --upgrade pip && pip install meson'
-				fi
+			if [[ ${DISTRO_VERSION} == *"8."* ]]; then
+				ssh "${1}" "dnf --enablerepo=PowerTools install -y meson"
+				ssh "${1}" "dnf --enablerepo=powertools install -y meson"
 			else
-				if [[ "${DISTRO_NAME}" = "centos" && ${DISTRO_VERSION} == *"8."* ]]; then
-					ssh "${1}" "dnf --enablerepo=PowerTools install -y meson"
-					ssh "${1}" "dnf --enablerepo=powertools install -y meson"
-				else
-					packages+=(meson)
-				fi
+				packages+=(meson)
 			fi
 			;;
 		ubuntu|debian)
@@ -229,24 +206,11 @@ function Install_Dpdk () {
 			else
 				packages+=(rdma-core)
 			fi
-			ssh "${1}" ". utils.sh && CheckInstallLockUbuntu && add-apt-repository 'deb http://cz.archive.ubuntu.com/ubuntu eoan main universe' "
-			ssh "${1}" ". utils.sh && CheckInstallLockUbuntu && update_repos"
 			packages+=(librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev meson pkg-config python3-pip)
 			;;
 		suse|opensuse|sles)
 			ssh "${1}" ". utils.sh && add_sles_network_utilities_repo"
-			local kernel=$(uname -r)
-			if [[ "${kernel}" == *azure ]];
-			then
-				ssh "${1}" "zypper install --oldpackage -y kernel-azure-devel=${kernel::-6}"
-				packages+=(kernel-devel-azure)
-			else
-				packages+=(kernel-default-devel)
-			fi
-			packages+=(libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel pkg-config)
-			# default meson in SUSE 15-SP1 is 0.46 & required is 0.47. Installing it separately
-			ssh "${1}" ". utils.sh && install_package ninja"
-			ssh "${1}" "rpm -ivh https://download.opensuse.org/repositories/openSUSE:/Leap:/15.2/standard/noarch/meson-0.54.2-lp152.1.1.noarch.rpm"
+			packages+=(libnuma-devel numactl librdmacm1 rdma-core-devel libmnl-devel pkg-config meson ninja python3-pip)
 			ssh "${1}" "ln -sf /usr/include/libmnl/libmnl/libmnl.h /usr/include/libmnl/libmnl.h"
 			;;
 		*)
@@ -349,14 +313,10 @@ function Install_Dpdk () {
 		LogMsg "dpdk build with default DST IP ADDR on ${1}"
 	fi
 
-	# meson version on Ubuntu 16.04 is 0.29.0, on Ubuntu 18.04 is 0.45.1.
-	# dpdk meson version needs at least 0.47.1.
-	if [[ ${DISTRO_NAME} == ubuntu ]]; then
-		ssh "${1}" "pip3 install --upgrade meson"
-		ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
-		ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
-		ssh "${1}" "pip3 install --upgrade ninja"
-	fi
+	ssh "${1}" "pip3 install --upgrade meson"
+	ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
+	ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
+	ssh "${1}" "pip3 install --upgrade ninja"
 
 	LogMsg "MLX_PMD flag enabling on ${1}"
 	if type Dpdk_Configure > /dev/null; then
