@@ -180,19 +180,17 @@ function Install_Dpdk () {
 			fi
 			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
 			check_exit_status "Install Infiniband Support on ${1}" "exit"
-			devel_source=(  "7.5=http://vault.centos.org/7.5.1804/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			                "7.6=http://vault.centos.org/7.6.1810/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
-			                "8.1=http://vault.centos.org//8.1.1911/BaseOS/x86_64/os/Packages/kernel-devel-$(uname -r).rpm" )
-			curr_version=$(ssh "${1}" "grep -E '7.5|7.6|8.1' /etc/redhat-release")
-			for source in "${devel_source[@]}" ; do
-				KEY="${source%%=*}"
-				if [[ "$curr_version" == *"$KEY"* ]]; then
-					VALUE="${source##*=}"
-					LogMsg "Installing kernel-devel package for $KEY from $VALUE."
-					ssh "${1}" "rpm -ivh $VALUE"
-				fi
-			done
-			packages+=(kernel-devel-$(uname -r) numactl-devel.x86_64 librdmacm-devel pkgconfig)
+			# release=$(cat /etc/redhat-release)
+			# release=($release)
+			# release=${release[3]}
+			# if grep -E '7.' /etc/redhat-release; then
+			# 	rpm_url="http://vault.centos.org/${release}/updates/x86_64/Packages/kernel-devel-$(uname -r).rpm"
+			# fi
+			# if grep -E '8.' /etc/redhat-release; then
+			# 	rpm_url="http://vault.centos.org/$release/BaseOS/x86_64/Packages/kernel-devel-$(uname -r).rpm"
+			# fi
+			# ssh "${1}" "rpm -ivh $rpm_url"
+			packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig)
 			ssh "${1}" "yum makecache"
 			check_package "libmnl-devel"
 			if [ $? -eq 0 ]; then
@@ -215,6 +213,7 @@ function Install_Dpdk () {
 				fi
 			else
 				if [[ "${DISTRO_NAME}" = "centos" && ${DISTRO_VERSION} == *"8."* ]]; then
+					ssh "${1}" "dnf --enablerepo=PowerTools install -y meson"
 					ssh "${1}" "dnf --enablerepo=powertools install -y meson"
 				else
 					packages+=(meson)
