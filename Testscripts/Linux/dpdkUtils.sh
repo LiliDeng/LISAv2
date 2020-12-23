@@ -315,8 +315,7 @@ function Install_Dpdk () {
 	fi
 
 	ssh "${1}" "pip3 install --upgrade meson"
-	ssh "${1}" "mv /usr/bin/meson /usr/bin/meson.bak"
-	ssh "${1}" "ln -s /usr/local/bin/meson /usr/bin/meson"
+	ssh "${1}" "[ -f /usr/local/bin/meson ] && mv /usr/bin/meson /usr/bin/meson.bak && ln -s /usr/local/bin/meson /usr/bin/meson"
 	ssh "${1}" "pip3 install --upgrade ninja"
 
 	LogMsg "MLX_PMD flag enabling on ${1}"
