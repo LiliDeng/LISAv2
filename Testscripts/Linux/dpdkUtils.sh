@@ -172,24 +172,25 @@ function Install_Dpdk () {
 	DPDK_DIR="dpdk"
 	SetTestStateRunning
 	LogMsg "Configuring ${1} ${DISTRO_NAME} ${DISTRO_VERSION} for DPDK test..."
-	packages=(gcc make git tar wget dos2unix psmisc make)
+	# packages=(gcc make git tar wget dos2unix psmisc make)
+	packages=(python3-pip)
 	case "${DISTRO_NAME}" in
 		oracle|rhel|centos)
-			if ! ([ "${DISTRO_NAME}" = "rhel" ] && [[ ${DISTRO_VERSION} == *"8."* ]]) ;then
-				ssh "${1}" ". utils.sh && install_epel"
-			fi
-			ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
-			check_exit_status "Install Infiniband Support on ${1}" "exit"
-			packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig python3-pip)
-			ssh "${1}" "yum makecache"
-			check_package "libmnl-devel"
-			if [ $? -eq 0 ]; then
-				packages+=("libmnl-devel")
-			fi
-			check_package "elfutils-libelf-devel"
-			if [ $? -eq 0 ]; then
-				packages+=("elfutils-libelf-devel")
-			fi
+			# if ! ([ "${DISTRO_NAME}" = "rhel" ] && [[ ${DISTRO_VERSION} == *"8."* ]]) ;then
+			# 	ssh "${1}" ". utils.sh && install_epel"
+			# fi
+			# ssh "${1}" "yum -y groupinstall 'Infiniband Support' && dracut --add-drivers 'mlx4_en mlx4_ib mlx5_ib' -f && systemctl enable rdma"
+			# check_exit_status "Install Infiniband Support on ${1}" "exit"
+			# packages+=(numactl-devel.x86_64 librdmacm-devel pkgconfig python3-pip)
+			# ssh "${1}" "yum makecache"
+			# check_package "libmnl-devel"
+			# if [ $? -eq 0 ]; then
+			# 	packages+=("libmnl-devel")
+			# fi
+			# check_package "elfutils-libelf-devel"
+			# if [ $? -eq 0 ]; then
+			# 	packages+=("elfutils-libelf-devel")
+			# fi
 			if [[ ${DISTRO_VERSION} == *"8."* ]]; then
 				ssh "${1}" "dnf --enablerepo=PowerTools install -y meson"
 				ssh "${1}" "dnf --enablerepo=powertools install -y meson"
