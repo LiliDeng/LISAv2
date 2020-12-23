@@ -20,17 +20,23 @@
 
 CONSTANTS_FILE="./constants.sh"
 UTIL_FILE="./utils.sh"
+ICA_TESTABORTED="TestAborted"           # Error during the setup of the test
+
+UpdateTestState()
+{
+	echo "${1}" > ./state.txt
+}
 
 . ${CONSTANTS_FILE} || {
 	errMsg="Error: missing ${CONSTANTS_FILE} file"
 	LogMsg "${errMsg}"
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 10
 }
 . ${UTIL_FILE} || {
 	errMsg="Error: missing ${UTIL_FILE} file"
 	LogMsg "${errMsg}"
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 10
 }
 
@@ -38,21 +44,21 @@ if [ ! "${server}" ]; then
 	errMsg="Please add/provide value for server in constants.sh. server=<server ip>"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 1
 fi
 if [ ! "${client}" ]; then
 	errMsg="Please add/provide value for client in constants.sh. client=<client ip>"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 1
 fi
 if [ ! "${testDuration}" ]; then
 	errMsg="Please add/provide value for testDuration in constants.sh. testDuration=60"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 1
 fi
 
@@ -60,17 +66,16 @@ if [ ! "${nicName}" ]; then
 	errMsg="Please add/provide value for nicName in constants.sh. nicName=eth0/bond0"
 	LogMsg "${errMsg}"
 	echo "${errMsg}" >> ./summary.log
-	SetTestStateAborted
+	UpdateTestState $ICA_TESTABORTED
 	exit 1
 fi
 
-SetTestStateRunning
 # Make & build ntttcp on client and server Machine
 LogMsg "Configuring client ${client}..."
 Run_SSHCommand "${client}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${client}.."
-	SetTestStateAborted
+	UpdateTestState "TestAborted"
 	exit 1
 fi
 
@@ -78,24 +83,18 @@ LogMsg "Configuring server ${server}..."
 Run_SSHCommand "${server}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${server}.."
-	SetTestStateAborted
+	UpdateTestState "TestAborted"
 	exit 1
 fi
 
 if [[ $(detect_linux_distribution) == coreos ]]; then
 	ntttcp_cmd="docker run --network host lisms/ntttcp"
 	lagscope_cmd="docker run --network host lisms/lagscope"
-	mpstat_cmd="docker run --network host lisms/toolbox mpstat"
-	dstat_cmd="docker run --network host lisms/toolbox dstat"
-	sar_cmd="docker run --network host lisms/toolbox sar"
 	Run_SSHCommand "${server}" ". $UTIL_FILE && Delete_Containers"
 	Run_SSHCommand "${client}" ". $UTIL_FILE && Delete_Containers"
 else
 	ntttcp_cmd="ntttcp"
 	lagscope_cmd="lagscope"
-	mpstat_cmd="mpstat"
-	dstat_cmd="dstat"
-	sar_cmd="sar"
 fi
 
 bc_cmd=$(echo $(Get_BC_Command))
@@ -236,6 +235,8 @@ Run_Ntttcp()
 {
 	i=0
 	data_loss=0
+	Kill_Process "${server}" ntttcp
+	Kill_Process "${client}" ntttcp
 
 	# Disable firewalld
 	Run_SSHCommand "${client}" "service firewalld stop"
@@ -244,7 +245,8 @@ Run_Ntttcp()
 	Run_SSHCommand "${server}" "mkdir -p ${log_folder}"
 	Run_SSHCommand "${client}" "mkdir -p ${log_folder}"
 	result_file="${log_folder}/report.csv"
-	if [[ $testType == "udp" ]]; then
+	if [[ $testType == "udp" ]];
+	then
 		bufferLength=$(($bufferLength/1024))
 		echo "test_connections,tx_throughput_in_Gbps,rx_throughput_in_Gbps,datagram_loss_in_%" > "${result_file}"
 		core_mem_set_cmd="sysctl -w net.core.rmem_max=67108864; sysctl -w net.core.rmem_default=67108864; sysctl -w net.core.wmem_default=67108864; sysctl -w net.core.wmem_max=67108864"
@@ -260,12 +262,11 @@ Run_Ntttcp()
 
 	IFS=',' read -r -a array <<< "$client"
 	client_count=${#array[@]}
-	if [ "$client_count" -gt 1 ]; then
+	if [ "$client_count" -gt 1 ];
+	then
 		mode="multi-clients"
 	fi
 	for current_test_threads in "${testConnections[@]}"; do
-		Kill_Process "${server}" ntttcp
-		Kill_Process "${client}" ntttcp
 		test_threads=$(($current_test_threads/$client_count))
 		if [[ $test_threads -lt $max_server_threads ]];
 		then
@@ -276,12 +277,14 @@ Run_Ntttcp()
 			num_threads_n=$(($test_threads/$num_threads_P))
 		fi
 
-		if [[ $testType == "udp" ]]; then
+		if [[ $testType == "udp" ]];
+		then
 			tx_log_prefix="sender-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			rx_log_prefix="receiver-${testType}-${bufferLength}k-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} ${bufferLength}k Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
 			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -u -b ${bufferLength}k -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
-			if [[ "$mode" == "multi-clients" ]]; then
+			if [[ "$mode" == "multi-clients" ]];
+			then
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -u -b ${bufferLength}k -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
@@ -290,11 +293,12 @@ Run_Ntttcp()
 			rx_log_prefix="receiver-${testType}-p${num_threads_P}X${num_threads_n}.log"
 			run_msg="Running ${testType} Test: $current_test_threads connections : $num_threads_P X $num_threads_n X $client_count clients"
 			server_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -r${server} -P ${num_threads_P} -t ${testDuration} -e -W 1 -C 1"
-			if [[ "$mode" == "multi-clients" ]]; then
+			if [[ "$mode" == "multi-clients" ]];
+			then
 				server_ntttcp_cmd+=" -M"
 			fi
 			client_ntttcp_cmd="ulimit -n 204800 && ${ntttcp_cmd} -s${server} -P ${num_threads_P} -n ${num_threads_n} -t ${testDuration} -W 1 -C 1"
-			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 5; done" &
+			Run_SSHCommand "${server}" "for i in {1..$testDuration}; do ss -ta | grep ESTA | grep -v ssh | wc -l >> ${log_folder}/tcp-connections-p${num_threads_P}X${num_threads_n}.log; sleep 1; done" &
 		fi
 
 
@@ -308,31 +312,24 @@ Run_Ntttcp()
 		rx_ntttcp_log_file="${log_folder}/ntttcp-${rx_log_prefix}"
 		tx_ntttcp_log_files=()
 		tx_lagscope_log_files=()
-		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix} on server ${server}"
-		ssh "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} 2>&1 &" &
-		sleep 10
+		Kill_Process "${server}" ntttcp
+		Kill_Process "${client}" ntttcp
+		LogMsg "ServerCmd: $server_ntttcp_cmd > ${log_folder}/ntttcp-${rx_log_prefix}"
+		ssh "${server}" "${server_ntttcp_cmd} > ${log_folder}/ntttcp-${rx_log_prefix} &" &
 		Kill_Process "${server}" lagscope
 		Run_SSHCommand "${server}" "${lagscope_cmd} -r" &
-		Kill_Process "${server}" dstat
-		Run_SSHCommand "${server}" "${dstat_cmd} -dam" > "${log_folder}/dstat-${rx_log_prefix}" &
-		Kill_Process "${server}" mpstat
-		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "${log_folder}/mpstat-${rx_log_prefix}" &
 
+		sleep 2
 		IFS=',' read -r -a array <<< "${client}"
 		for ip in "${array[@]}"
 		do
-			Kill_Process "${ip}" sar
-			Kill_Process "${ip}" dstat
-			Kill_Process "${ip}" mpstat
 			Kill_Process "${ip}" lagscope
-			ssh "${ip}" "${sar_cmd} -n DEV 1 ${testDuration}" > "${log_folder}/sar-${ip}-${tx_log_prefix}" &
-			ssh "${ip}" "${dstat_cmd} -dam" > "${log_folder}/dstat-${ip}-${tx_log_prefix}" &
-			ssh "${ip}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "${log_folder}/mpstat-${ip}-${tx_log_prefix}" &
 			ssh "${ip}" "${lagscope_cmd} -s${server} -t${testDuration}" -V > "${log_folder}/lagscope-${ip}-${tx_log_prefix}" &
 			tx_lagscope_log_files+=("${log_folder}/lagscope-${ip}-${tx_log_prefix}")
 		done
 
-		if [[ "$mode" == "multi-clients" ]]; then
+		if [[ "$mode" == "multi-clients" ]];
+		then
 			IFS=',' read -r -a array <<< "${client}"
 			index=$(($client_count -1))
 			client_ntttcp_raw_cmd="$client_ntttcp_cmd"
@@ -340,7 +337,7 @@ Run_Ntttcp()
 			do
 				client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${ip}" "${client_ntttcp_raw_cmd}")
 				LogMsg "Execute ${client_ntttcp_cmd} on ${ip}"
-				Run_SSHCommand "${ip}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
+				ssh "${ip}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
 				tx_ntttcp_log_files+=("${log_folder}/ntttcp-${ip}-${tx_log_prefix}")
 				sleep 5
 			done
@@ -348,17 +345,17 @@ Run_Ntttcp()
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${array[$(($index))]}" "${client_ntttcp_raw_cmd}")
 			client_ntttcp_cmd+=" -L"
 			LogMsg "Execute ${client_ntttcp_cmd} on ${array[$(($index))]}"
-			Run_SSHCommand "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
+			ssh "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
 			tx_ntttcp_log_files+=("${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}")
 		else
 			client_ntttcp_cmd=$(Get_VFName "${ntttcpVersion}" "${client}" "${client_ntttcp_cmd}")
-			LogMsg "Execute ${client_ntttcp_cmd} on client ${client}"
-			bash -c "${client_ntttcp_cmd} > ${log_folder}/ntttcp-${tx_log_prefix} 2>&1"
+			LogMsg "Execute ${client_ntttcp_cmd} on ${client}"
+			ssh "${client}" "${client_ntttcp_cmd}" > "${log_folder}/ntttcp-${tx_log_prefix}"
 			tx_ntttcp_log_files="${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
-		sleep 30
 		scp root@"${server}":"${log_folder}/ntttcp-${rx_log_prefix}" "${log_folder}/ntttcp-${rx_log_prefix}"
 		LogMsg "Parsing results for $current_test_threads connections"
+		sleep 10
 		tx_throughput_value=0.0
 		tx_cyclesperbytes_value=0.0
 		txpackets_sender_value=0.0
@@ -396,7 +393,8 @@ Run_Ntttcp()
 		done
 		avg_latency=$avg_latency_value
 		rx_cyclesperbytes=$(Get_CyclesPerBytes "$rx_ntttcp_log_file")
-		if [[ $tx_throughput == "0.00" ]]; then
+		if [[ $tx_throughput == "0.00" ]];
+		then
 			data_loss=$(printf %.2f 0)
 		else
 			data_loss=$(printf %.2f $(echo "scale=5; 100*(($tx_throughput-$rx_throughput)/$tx_throughput)" | ${bc_cmd}))
@@ -420,7 +418,8 @@ Run_Ntttcp()
 		LogMsg "Connections created time: $concreatedtime_us"
 		LogMsg "Retrasmit segments: $retrans_segs"
 
-		if [[ $testType == "udp" ]]; then
+		if [[ $testType == "udp" ]];
+		then
 			echo "$current_test_threads,$tx_throughput,$rx_throughput,$data_loss" >> "${result_file}"
 		else
 			testType="tcp"
@@ -428,7 +427,7 @@ Run_Ntttcp()
 		fi
 		LogMsg "current test finished. wait for next one... "
 		i=$(($i + 1))
-		sleep 30
+		sleep 15
 	done
 }
 
@@ -436,10 +435,7 @@ Run_Ntttcp()
 LogMsg "Now running ${testType} test using NTTTCP"
 Run_Ntttcp
 
-Kill_Process "${client}" dstat
 Kill_Process "${server}" lagscope
-Kill_Process "${server}" dstat
-Kill_Process "${server}" mpstat
 column -s, -t "${result_file}" > "${log_folder}"/report.log
 cp "${log_folder}"/* .
 cat report.log
