@@ -516,6 +516,8 @@ function Is-VmAlive {
                 }
             } else {
                 Write-LogInfo "Connecting to $($vm.PublicIP) : $port succeeded."
+                $Null = Run-LinuxCmd -ip $vm.PublicIP -port $vm.SSHPort -username $user -password $password -runAsSudo -command "sed -i 's/.*DenyUsers.*/#DenyUsers/g' /etc/ssh/sshd_config"
+                $Null = Run-LinuxCmd -ip $vm.PublicIP -port $vm.SSHPort -username $user -password $password -runAsSudo -command "systemctl restart sshd"
             }
         }
 

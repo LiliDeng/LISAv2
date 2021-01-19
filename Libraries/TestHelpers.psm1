@@ -385,8 +385,6 @@ Function Get-AvailableExecutionFolder([string] $username, [string] $password, [s
 			Write-LogDbg "Execution folder /home/$username exists."
 			Set-Variable -Name AvailableExecutionFolder -Value $true -Scope Global
 		}
-		Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $global:sshPrivateKey -P $port "$username@$ip" "sudo -S bash -c 'sed -i 's/.*DenyUsers.*/#DenyUsers/g' /etc/ssh/sshd_config'" 2> $null | Out-Null
-		Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $global:sshPrivateKey -P $port "$username@$ip" "sudo -S bash -c 'systemctl restart sshd'" 2> $null | Out-Null
 	}
 }
 
