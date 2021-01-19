@@ -362,6 +362,10 @@ Function Get-AvailableExecutionFolder([string] $username, [string] $password, [s
 			Set-Location $args[0];
 			if ($Using:usePrivateKey) {
 				$output = Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'if [ ! -d /home/$Using:username ]; then mkdir -p /home/$Using:username; chown -R $($args[2])}: /home/$Using:username; fi; if [ -d /home/$Using:username ]; then echo EXIST; else echo NOTEXIST; fi;'" 2> $null
+				$ssh_output = Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'cat /etc/ssh/sshd_config | grep -i ClientAliveCountMax'" 2> $null | Out-Null
+				Write-Output $ssh_output
+				Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'sed -i 's/.*ClientAliveCountMax.*/ClientAliveCountMax 4/g' /etc/ssh/sshd_config'" 2> $null | Out-Null
+				Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'systemctl restart sshd'" 2> $null | Out-Null
 			}
 			else {
 				$output = Write-Output "y" | .\Tools\plink.exe -ssh -C -v -pw $args[1] -P $Using:port "$Using:username@$Using:ip" "echo $Using:password | sudo -S bash -c 'if [ ! -d /home/$Using:username ]; then mkdir -p /home/$Using:username; chown -R $($args[2])}: /home/$Using:username; fi; if [ -d /home/$Using:username ]; then echo EXIST; else echo NOTEXIST; fi;'" 2> $null
