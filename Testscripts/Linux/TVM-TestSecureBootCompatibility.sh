@@ -23,6 +23,9 @@ case $DISTRO in
         echo "deb [arch=amd64] http://packages.microsoft.com/repos/azurecore/ xenial main" | sudo tee -a /etc/apt/sources.list.d/azure.list
         echo "deb [arch=amd64] http://packages.microsoft.com/repos/azurecore/ bionic main" | sudo tee -a /etc/apt/sources.list.d/azure.list
 
+        if [[ $DISTRO =~ "debian" ]]; then
+            install_package gnupg
+        fi
         wget https://packages.microsoft.com/keys/microsoft.asc
         wget https://packages.microsoft.com/keys/msopentech.asc
 
@@ -50,7 +53,7 @@ if [ ! -e /usr/local/bin/sbinfo ]; then
     exit 0
 fi
 
-SBEnforcementStage=$(sbinfo | grep SBEnforcementStage | sed -e s/'  "SBEnforcementStage": '//)
+SBEnforcementStage=$(/usr/local/bin/sbinfo | grep SBEnforcementStage | sed -e s/'  "SBEnforcementStage": '//)
 LogMsg "$SBEnforcementStage"
 
 if [[ "$SBEnforcementStage" == *"Secure Boot is enforced"* ]] || [[ "$SBEnforcementStage" == *"Secure Boot is not enforced"* ]]; then
