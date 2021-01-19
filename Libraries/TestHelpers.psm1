@@ -385,10 +385,6 @@ Function Get-AvailableExecutionFolder([string] $username, [string] $password, [s
 			Write-LogDbg "Execution folder /home/$username exists."
 			Set-Variable -Name AvailableExecutionFolder -Value $true -Scope Global
 		}
-		$ssh_output = Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'cat /etc/ssh/sshd_config | grep -i ClientAliveCountMax'" 2> $null | Out-Null
-		Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'sed -i 's/.*ClientAliveCountMax.*/ClientAliveCountMax 4/g' /etc/ssh/sshd_config'" 2> $null | Out-Null
-		Write-Output "y" | .\Tools\plink.exe -ssh -C -v -i $args[1] -P $Using:port "$Using:username@$Using:ip" "sudo -S bash -c 'systemctl restart sshd'" 2> $null | Out-Null
-		Write-LogDbg "ClientAliveCountMax - $ssh_output"
 	}
 }
 
