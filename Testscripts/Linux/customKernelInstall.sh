@@ -16,7 +16,8 @@
 #######################################################################
 
 supported_kernels=(ppa proposed proposed-azure proposed-edge latest
-                    linuxnext netnext upstream-stable linux-image-azure-lts-18.04)
+                    linuxnext netnext upstream-stable linux-image-azure-lts-18.04
+                    esm linux-azure-fips)
 tarDestination="./linux-source"
 packageDir=$(pwd)
 
@@ -302,6 +303,55 @@ function InstallKernel() {
             LogMsg "CUSTOM_KERNEL_FAIL"
             SetTestStateFailed
         else
+            LogMsg "CUSTOM_KERNEL_SUCCESS"
+            SetTestStateCompleted
+        fi
+    elif [ "${CustomKernel}" == "esm" ]; then
+        DISTRO=$(grep -ihs "buntu\|Suse\|Fedora\|Debian\|CentOS\|Red Hat Enterprise Linux" /etc/{issue,*release,*version})
+        if [[ $DISTRO =~ "Ubuntu" ]];
+        then
+            LogMsg "Enabling esm repository..."
+            release=$(lsb_release -c -s)
+            apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E3F30075648751D95A9404BD28904F735516A5D3
+            add-apt-repository -y "deb https://$esmCredential@private-ppa.launchpad.net/canonical-kernel-esm/proposed/ubuntu $release main"
+            apt -y update >> $LOG_FILE 2>&1
+            LogMsg "Installing linux-azure from ppa repository."
+            apt install -y linux-azure >> $LOG_FILE 2>&1
+            kernelInstallStatus=$?
+        fi
+        if [ $kernelInstallStatus -ne 0 ]; then
+            LogMsg "CUSTOM_KERNEL_FAIL"
+            SetTestStateFailed
+        else
+            LogMsg "CUSTOM_KERNEL_SUCCESS"
+            SetTestStateCompleted
+        fi
+    elif [ "${CustomKernel}" == "linux-azure-fips" ]; then
+        DISTRO=$(grep -ihs "buntu\|Suse\|Fedora\|Debian\|CentOS\|Red Hat Enterprise Linux" /etc/{issue,*release,*version})
+        if [[ $DISTRO =~ "Ubuntu" ]];
+        then
+            LogMsg "Enabling fips repository..."
+            release=$(lsb_release -c -s)
+            apt-key adv --keyserver keyserver.ubuntu.com --recv-keys a166877412dac26e73cebf3ff6c280178d13028c
+            sudo add-apt-repository -y "deb https://$fipsCredential@private-ppa.launchpad.net/ubuntu-advantage/fips-proposed/ubuntu $release main"
+            apt -y update >> $LOG_FILE 2>&1
+            LogMsg "Installing linux-azure-fips from ppa repository."
+            apt install -y ${CustomKernel}/${release} >> $LOG_FILE 2>&1
+            kernelInstallStatus=$?
+        fi
+        if [ $kernelInstallStatus -ne 0 ]; then
+            LogMsg "CUSTOM_KERNEL_FAIL"
+            SetTestStateFailed
+        else
+            output=$(dpkg -l | grep -i "${CustomKernel} ")
+            output=$(echo $output | cut -d ' ' -f 3 |  cut -d. -f-4)
+            kernel_version=$output
+            sub_b=$(cat /boot/grub/grub.cfg | grep -i "$output" | grep -i menuentry | grep -v recovery | cut -d \' -f 2)
+            sub_a="Advanced options for Ubuntu>"
+            replaced="$sub_a$sub_b"
+            echo $replaced >> $LOG_FILE 2>&1
+            sed -i.bak "s/GRUB_DEFAULT=.*/GRUB_DEFAULT='$replaced'/g" /etc/default/grub
+            update-grub
             LogMsg "CUSTOM_KERNEL_SUCCESS"
             SetTestStateCompleted
         fi
