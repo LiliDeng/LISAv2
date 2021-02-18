@@ -115,9 +115,6 @@ function Install_Dpdk_Dependencies() {
 		apt_packages="librdmacm-dev librdmacm1 build-essential libnuma-dev libmnl-dev libelf-dev dpkg-dev meson"
 		if [[ "${distro}" == "ubuntu16.04" ]]; then
 			ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && add-apt-repository ppa:canonical-server/dpdk-azure -y"
-			ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && add-apt-repository -y ppa:deadsnakes/ppa -y"
-			ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && apt-get install -y python3.6"
-			ssh ${install_ip} "rm -rf /usr/bin/python3 && ln -s /usr/bin/python3.6 /usr/bin/python3"
 		else
 			apt_packages="${apt_packages} rdma-core"
 		fi
@@ -232,6 +229,9 @@ function Install_Dpdk () {
 			then
 				LogMsg "Adding dpdk repo to ${DISTRO_NAME} ${DISTRO_VERSION} for DPDK test..."
 				ssh "${1}" ". utils.sh && CheckInstallLockUbuntu && add-apt-repository ppa:canonical-server/dpdk-azure -y"
+				ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && add-apt-repository -y ppa:deadsnakes/ppa -y"
+				ssh ${install_ip} ". utils.sh && CheckInstallLockUbuntu && apt-get install -y python3.6"
+				ssh ${install_ip} "rm -rf /usr/bin/python3 && ln -s /usr/bin/python3.6 /usr/bin/python3"
 			else
 				packages+=(rdma-core)
 			fi
