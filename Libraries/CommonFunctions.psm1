@@ -686,7 +686,8 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 		$CustomKernel = $CustomKernel.Trim()
 		# when adding new kernels here, also update script customKernelInstall.sh
 		$SupportedKernels = "ppa", "proposed", "proposed-azure", "proposed-edge",
-			"latest", "linuxnext", "netnext", "upstream-stable"
+			"latest", "linuxnext", "netnext", "upstream-stable", "linux-image-azure-lts-18.04",
+			"esm", "linux-azure-fips"
 
 		if ( ($CustomKernel -notin $SupportedKernels) -and !($CustomKernel.EndsWith(".deb")) -and `
 		!($CustomKernel.EndsWith(".rpm")) -and !($CustomKernel.EndsWith(".tar.gz")) -and !($CustomKernel.EndsWith(".tar")) ) {
@@ -716,8 +717,15 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 				$Null = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "chmod +x *.sh" -runAsSudo
 				$currentKernelVersion = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user -password $password -command "uname -r"
 				Write-LogInfo "Executing $scriptName ..."
+				$command = "/home/$user/$scriptName -CustomKernel '$CustomKernelLabel' -logFolder /home/$user"
+				if ($CustomKernelLabel -eq "esm") {
+					$command += " -esmCredential '$($XmlSecrets.secrets.esmCredential)'"
+				}
+				if ($CustomKernelLabel -eq "linux-azure-fips") {
+					$command += " -fipsCredential '$($XmlSecrets.secrets.fipsCredential)'"
+				}
 				$jobID = Run-LinuxCmd -ip $vmData.PublicIP -port $vmData.SSHPort -username $user `
-					-password $password -command "/home/$user/$scriptName -CustomKernel '$CustomKernelLabel' -logFolder /home/$user" `
+					-password $password -command $command `
 					-RunInBackground -runAsSudo
 				$packageInstallObj = New-Object PSObject
 				Add-member -InputObject $packageInstallObj -MemberType NoteProperty -Name ID -Value $jobID
