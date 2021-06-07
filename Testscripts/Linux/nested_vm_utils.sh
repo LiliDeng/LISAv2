@@ -101,6 +101,7 @@ Install_KVM_Dependencies()
     check_package "dnsmasq"
     if [ $? -eq 0 ]; then
         install_package dnsmasq
+        sleep 30
     fi
 }
 
