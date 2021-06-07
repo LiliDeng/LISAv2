@@ -110,26 +110,21 @@ function Configure_HV_Interfaces
 function main() {
     test_issue=0
 
-    # Construct array of interfaces
-    DEFAULT_GATEWAY=($(route -n | grep 'UG[ \t]' | awk '{print $2}'))
-    IFACES=($(ls /sys/class/net/))
-    # Check for interfaces with longer names - enp0s10f
-    # Delete other interfaces - lo, virbr
-    let COUNTER=0
-    for i in "${!IFACES[@]}"; do
-        if echo "${IFACES[$i]}" | grep -q "lo\|virbr"; then
-            unset IFACES[$i]
-        fi
-        if [[ ${IFACES[$i]} == "enp0s10f" ]]; then
-            IFACES[$i]=${IFACES[$i]}${COUNTER}
-            let COUNTER=COUNTER+1
-        fi
-        if [ -z "${HV_LEGACY_NICS+x}" ]; then
-            if echo "${IFACES[$i]}" | grep -q "en"; then
-                unset IFACES[$i]
-            fi
+    timeout=50
+    while [ $timeout -ge 0 ]; do
+        return_value=$(dmesg | grep -i 'data path switched to VF' | wc -l)
+        if [ $return_value -eq 8 ];then
+            break
+        else
+            LogMsg "Wait for data path switched to VF"
+            timeout=$((timeout-5))
+            sleep 5
         fi
     done
+
+    # Construct array of interfaces
+    DEFAULT_GATEWAY=($(route -n | grep 'UG[ \t]' | awk '{print $2}'))
+    IFACES=$(lshw -c network -businfo | grep -i 'Ethernet interface' | awk -F " " '{print $1}')
     LogMsg "Array of NICs - ${IFACES[*]}"
 
     # If platform.txt is present, then the test is performed on Hyper-V
@@ -145,10 +140,6 @@ function main() {
     # Check if every interface has an IP assigned
     for eth_name in ${IFACES[@]}; do
         eth_ip=$(ip a | grep $eth_name | sed -n '2 p' | awk '{print $2}')
-        eth_number=$(echo $eth_name | sed 's/[^0-9]*//g')
-        if [[ $eth_number -ge 8 ]]; then
-            continue
-        fi
         if [[ "${eth_ip}" != '' ]]; then
             UpdateSummary "IP for ${eth_name} is ${eth_ip}"
         else
