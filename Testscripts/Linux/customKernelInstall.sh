@@ -17,7 +17,7 @@
 
 supported_kernels=(ppa proposed proposed-azure proposed-edge latest
                     linuxnext netnext upstream-stable linux-image-azure-lts-18.04
-                    esm linux-azure-fips)
+                    esm linux-azure-fips linux-image-azure-lts-20.04)
 tarDestination="./linux-source"
 packageDir=$(pwd)
 
@@ -25,6 +25,7 @@ declare -A KERNEL_DICT
 KERNEL_DICT=([proposed-azure]="linux-azure"
             [proposed-edge]="linux-azure-edge"
             [linux-image-azure-lts-18.04]="linux-image-azure-lts-18.04"
+            [linux-image-azure-lts-20.04]="linux-image-azure-lts-20.04"
             )
 
 # Source utils.sh
@@ -255,7 +256,7 @@ function InstallKernel() {
             LogMsg "CUSTOM_KERNEL_SUCCESS"
             SetTestStateCompleted
         fi
-    elif [[ "${CustomKernel}" =~ proposed-azure|proposed-edge|linux-image-azure-lts-18.04 ]]; then
+    elif [[ "${CustomKernel}" =~ proposed-azure|proposed-edge|linux-image-azure-lts-18.04|linux-image-azure-lts-20.04 ]]; then
         export DEBIAN_FRONTEND=noninteractive
         kernel="${KERNEL_DICT[$CustomKernel]}"
         release=$(lsb_release -c -s)

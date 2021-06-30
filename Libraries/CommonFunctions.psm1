@@ -687,7 +687,7 @@ function Install-CustomKernel ($CustomKernel, $allVMData, [switch]$RestartAfterU
 		# when adding new kernels here, also update script customKernelInstall.sh
 		$SupportedKernels = "ppa", "proposed", "proposed-azure", "proposed-edge",
 			"latest", "linuxnext", "netnext", "upstream-stable", "linux-image-azure-lts-18.04",
-			"esm", "linux-azure-fips"
+			"esm", "linux-azure-fips", "linux-image-azure-lts-20.04"
 
 		if ( ($CustomKernel -notin $SupportedKernels) -and !($CustomKernel.EndsWith(".deb")) -and `
 		!($CustomKernel.EndsWith(".rpm")) -and !($CustomKernel.EndsWith(".tar.gz")) -and !($CustomKernel.EndsWith(".tar")) ) {
