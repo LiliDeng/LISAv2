@@ -17,7 +17,7 @@
 
 supported_kernels=(ppa proposed proposed-azure proposed-edge latest
                     linuxnext netnext upstream-stable linux-image-azure-lts-18.04
-                    esm linux-azure-fips linux-image-azure-lts-20.04)
+                    esm linux-azure-fips linux-image-azure-lts-20.04 linux-image-azure-fde)
 tarDestination="./linux-source"
 packageDir=$(pwd)
 
@@ -26,6 +26,7 @@ KERNEL_DICT=([proposed-azure]="linux-azure"
             [proposed-edge]="linux-azure-edge"
             [linux-image-azure-lts-18.04]="linux-image-azure-lts-18.04"
             [linux-image-azure-lts-20.04]="linux-image-azure-lts-20.04"
+            [linux-image-azure-fde]="linux-image-azure-fde"
             )
 
 # Source utils.sh
@@ -256,18 +257,24 @@ function InstallKernel() {
             LogMsg "CUSTOM_KERNEL_SUCCESS"
             SetTestStateCompleted
         fi
-    elif [[ "${CustomKernel}" =~ proposed-azure|proposed-edge|linux-image-azure-lts-18.04|linux-image-azure-lts-20.04 ]]; then
+    elif [[ "${CustomKernel}" =~ proposed-azure|proposed-edge|linux-image-azure-lts-18.04|linux-image-azure-lts-20.04|linux-image-azure-fde ]]; then
         export DEBIAN_FRONTEND=noninteractive
         kernel="${KERNEL_DICT[$CustomKernel]}"
-        release=$(lsb_release -c -s)
-        LogMsg "Enabling proposed repository for $release distro"
-        echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list
-        rm -rf /etc/apt/preferences.d/proposed-updates
-        LogMsg "Installing $kernel kernel from $release proposed repository."
-        apt-get clean all
-        apt-get -y update >> $LOG_FILE 2>&1
-        CheckInstallLockUbuntu
-        apt-get install -yq "$kernel"/"$release-proposed" >> $LOG_FILE 2>&1
+        if [[ "${CustomKernel}" = linux-image-azure-fde ]]; then
+            add-apt-repository -y ppa:canonical-kernel-team/azure-test
+            apt-get -y update >> $LOG_FILE 2>&1
+            apt install -y linux-image-azure-fde >> $LOG_FILE 2>&1
+        else
+            release=$(lsb_release -c -s)
+            LogMsg "Enabling proposed repository for $release distro"
+            echo "deb http://archive.ubuntu.com/ubuntu/ ${release}-proposed restricted main multiverse universe" >> /etc/apt/sources.list
+            rm -rf /etc/apt/preferences.d/proposed-updates
+            LogMsg "Installing $kernel kernel from $release proposed repository."
+            apt-get clean all
+            apt-get -y update >> $LOG_FILE 2>&1
+            CheckInstallLockUbuntu
+            apt-get install -yq "$kernel"/"$release-proposed" >> $LOG_FILE 2>&1
+        fi
         kernelInstallStatus=$?
         if [ $kernelInstallStatus -ne 0 ]; then
             LogMsg "CUSTOM_KERNEL_FAIL"
