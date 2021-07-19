@@ -65,6 +65,8 @@ function New-FileShare {
         Write-LogErr "Failed to get the share."
         return 1
     }
+    Write-Host "$($share[0])"
+    Write-Host "$($share[0].Uri)"
     $shareHost = $share[0].Uri.Host
     $url_main = $shareHost + "/" + $fileShareName
     $url_scratch = $shareHost + "/" + $scratchName
