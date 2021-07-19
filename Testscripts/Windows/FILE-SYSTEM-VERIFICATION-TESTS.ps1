@@ -65,7 +65,7 @@ function New-FileShare {
         Write-LogErr "Failed to get the share."
         return 1
     }
-    $shareHost = $share.Uri.Host[0]
+    $shareHost = $share[0].Uri.Host
     $url_main = $shareHost + "/" + $fileShareName
     $url_scratch = $shareHost + "/" + $scratchName
     Add-Content -Value "TEST_DEV=//$url_main" -Path $xfstestsConfig
