@@ -1352,6 +1352,18 @@ Function Invoke-AllResourceGroupDeployments($SetupTypeData, $CurrentTestData, $R
 				Add-Content -Value "$($indents[4])^publisher^: ^$($used_image.PurchasePlan.Publisher)^" -Path $jsonFile
 				Add-Content -Value "$($indents[3])}," -Path $jsonFile
 			}
+			if ($VHDName.Contains("fips")) {
+				$PurchasePlan_Publisher = "canonical"
+				$PurchasePlan_Product = "0001-com-ubuntu-pro-microsoft"
+				$PurchasePlan_Name = "pro-fips-18_04"
+				Write-LogInfo "  Adding plan information: plan name - $PurchasePlan_Name, product - $PurchasePlan_Product, publisher -$PurchasePlan_Publisher."
+				Add-Content -Value "$($indents[3])^plan^:" -Path $jsonFile
+				Add-Content -Value "$($indents[3]){" -Path $jsonFile
+				Add-Content -Value "$($indents[4])^name^: ^$PurchasePlan_Name^," -Path $jsonFile
+				Add-Content -Value "$($indents[4])^product^: ^$PurchasePlan_Product^," -Path $jsonFile
+				Add-Content -Value "$($indents[4])^publisher^: ^$PurchasePlan_Publisher^" -Path $jsonFile
+				Add-Content -Value "$($indents[3])}," -Path $jsonFile
+			}
 			Add-Content -Value "$($indents[3])^tags^: {^TestID^: ^$TestID^}," -Path $jsonFile
 			Add-Content -Value "$($indents[3])^dependsOn^: " -Path $jsonFile
 			Add-Content -Value "$($indents[3])[" -Path $jsonFile
