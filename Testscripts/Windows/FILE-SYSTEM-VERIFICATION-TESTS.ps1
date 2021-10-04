@@ -177,7 +177,7 @@ function Main {
             -password $password -command "cp * /home/$user" -ignoreLinuxExitCode:$true | Out-Null
         $testResult = Collect-TestLogs -LogsDestination $LogDir -ScriptName `
             $currentTestData.files.Split('\')[3].Split('.')[0] -TestType "sh"  -PublicIP `
-            $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $user `
+            $allVMData.PublicIP -SSHPort $allVMData.SSHPort -Username $superuser `
             -password $password -TestName $currentTestData.testName
         if ($state -eq "TestRunning") {
             $resultArr += "ABORTED"
