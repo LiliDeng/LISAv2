@@ -76,7 +76,7 @@ function HandleTestResults() {
 function VerifyDockerEngine() {
     LogMsg "VerifyDockerEngine on $DISTRO"
 
-    output=$(docker run hello-world)
+    output=$(sudo docker run hello-world)
     if [ $? -ne 0 ]; then
         LogErr "Fail to run docker run hello-world"
         return 1
