@@ -219,7 +219,7 @@ function InstallMiscUtility() {
 # Function to start docker engine
 function StartDockerEngine() {
     LogMsg "Start docker engine"
-    systemctl start docker || service docker start || systemctl start snap.docker.dockerd.service || service snap.docker.dockerd.service start
+    systemctl start docker || service docker start || (snap install docker && systemctl start snap.docker.dockerd.service)
     if [ $? -ne 0 ]; then
         LogErr "Fail to start docker service."
         return 1
