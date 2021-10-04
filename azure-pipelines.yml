@@ -1,6 +1,6 @@
 name: 'code_quality'
 variables:
-  enable_all: 'false'
+  enable_all: 'true'
 jobs:
   - job: 'UnitTests_Pester'
     timeoutInMinutes: 10
