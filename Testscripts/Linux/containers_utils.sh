@@ -359,7 +359,7 @@ function RunDockerContainerAttachingVolume() {
         return 1
     } || local container_volume="$3"
 
-    docker run -v ${container_volume} --name $container_name $container_img_name 1> ${DOCKER_RUN_OUTPUT} 2>&1
+    sudo docker run -v ${container_volume} --name $container_name $container_img_name 1> ${DOCKER_RUN_OUTPUT} 2>&1
     if [ $? -ne 0 ]; then
         LogErr "docker run failed: ${DOCKER_RUN_OUTPUT}."
         return 1
@@ -396,7 +396,7 @@ function RunDockerContainer() {
     local container_name=testcon
     [[ ! -z "$2" ]] && container_name=$2
 
-    docker run --name $container_name $container_img_name 1> ${DOCKER_RUN_OUTPUT} 2>&1
+    sudo docker run --name $container_name $container_img_name 1> ${DOCKER_RUN_OUTPUT} 2>&1
     if [ $? -ne 0 ]; then
         LogErr "docker run failed: ${DOCKER_RUN_OUTPUT}."
         return 1
