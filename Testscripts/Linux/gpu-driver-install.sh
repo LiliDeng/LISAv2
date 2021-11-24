@@ -59,7 +59,7 @@ function skip_test() {
 			fi
 			if [[ $DISTRO == "ubuntu_x" ]]; then
 				# skip other ubuntu version than 16.04, 18.04, 20.04, 21.04
-				if [[ $VERSION_ID != "16.04" && $VERSION_ID != "18.04" && $VERSION_ID != "20.04" && $VERSION_ID != "21.04" ]]; then
+				if [[ $VERSION_ID != "16.04" && $VERSION_ID != "18.04" && $VERSION_ID != "20.04" && $VERSION_ID != "21.04" && $VERSION_ID != "21.10" ]]; then
 					unsupport_flag=1
 				fi
 			fi
@@ -111,6 +111,7 @@ function InstallCUDADrivers() {
 	;;
 
 	ubuntu*)
+		CUDADriverVersion="10.1.168-1"
 		GetOSVersion
 		# Temporary fix till driver for ubuntu19 and ubuntu20 series list under http://developer.download.nvidia.com/compute/cuda/repos/
 		if [[ $os_RELEASE =~ 19.* ]] || [[ $os_RELEASE =~ 20.* ]] || [[ $os_RELEASE =~ 21.* ]]; then
@@ -261,8 +262,7 @@ function install_gpu_requirements() {
 		;;
 
 		ubuntu*)
-			DEBIAN_FRONTEND=noninteractive
-			apt -y install build-essential libelf-dev linux-tools-"$(uname -r)" linux-cloud-tools-"$(uname -r)" python libglvnd-dev ubuntu-desktop
+			DEBIAN_FRONTEND=noninteractive apt -y install build-essential libelf-dev linux-tools-"$(uname -r)" linux-cloud-tools-"$(uname -r)" python libglvnd-dev ubuntu-desktop
 			if [ $? -eq 0 ]; then
 				LogMsg "Successfully installed build-essential libelf-dev linux-tools linux-cloud-tools python libglvnd-dev ubuntu-desktop"
 			else
