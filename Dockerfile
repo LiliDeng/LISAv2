@@ -1,32 +1,33 @@
-FROM mcr.microsoft.com/cbl-mariner/base/core:2.0
+# Define build arguments for platform-specific base images
+ARG BASE_IMAGE_LINUX=mcr.microsoft.com/cbl-mariner/base/core:2.0
+ARG BASE_IMAGE_WINDOWS=mcr.microsoft.com/windows/servercore:ltsc2022
+
+# For Linux build
+FROM ${BASE_IMAGE_LINUX} AS linux
 
 WORKDIR /app
 
+# Linux specific setup (can add more Linux dependencies here)
 RUN tdnf update -y && \
-    tdnf install -y \
-        git \
-        gcc \
-        gobject-introspection-devel \
-        cairo-gobject \
-        cairo-devel \
-        pkg-config \
-        libvirt-devel \
-        python3-devel \
-        python3-pip \
-        python3-virtualenv \
-        build-essential \
-        cairo-gobject-devel \
-        curl \
-        ca-certificates && \
+    tdnf install -y git python3 && \
     tdnf clean all && \
     rm -rf /var/cache/tdnf /tmp/*
 
-RUN git clone --depth 1 --branch $(curl --silent "https://api.github.com/repos/microsoft/lisa/releases/latest" \
-    | grep '"tag_name":' \
-    | sed -E 's/.*"([^"]+)".*/\1/') https://github.com/microsoft/lisa.git /app/lisa
+# For Windows build
+FROM ${BASE_IMAGE_WINDOWS} AS windows
 
-WORKDIR /app/lisa
+WORKDIR C:/app
 
-RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir --editable .[azure,libvirt,baremetal] --config-settings editable_mode=compat
+# Windows specific setup (can add more Windows dependencies here)
+RUN powershell -Command \
+    Set-ExecutionPolicy Unrestricted -Scope Process -Force; \
+    Invoke-WebRequest -Uri https://aka.ms/install-powershell.ps1 -OutFile install-powershell.ps1; \
+    .\install-powershell.ps1 -Force; \
+    Remove-Item -Force install-powershell.ps1
 
+# Final stage to copy from the correct platform
+FROM ${BASE_IMAGE_LINUX} AS final
+COPY --from=linux /app /app
+
+# Default entrypoint
+CMD ["python3", "--version"]
