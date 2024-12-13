@@ -29,4 +29,3 @@ WORKDIR /app/lisa
 
 RUN python3 -m pip install --no-cache-dir --upgrade pip && \
     python3 -m pip install --no-cache-dir --editable .[azure,libvirt,baremetal] --config-settings editable_mode=compat
-
