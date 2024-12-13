@@ -7,8 +7,30 @@ on:
       - main
 
 jobs:
-  build:
+  build-windows:
+      runs-on: windows-latest
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Log in to Azure Container Registry
+          run: |
+            echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+        - name: Build and Push Windows Docker Image
+          run: |
+            docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows -f Dockerfile.windows .
+            docker tag ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows
+            docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows
+            docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows
+
+        - name: Log out from ACR
+          run: docker logout ${{ secrets.ACR_LOGIN_SERVER }}
+
+  build-linux:
     runs-on: ubuntu-latest
+    needs: [build-windows]
 
     steps:
       - name: Checkout code
@@ -21,12 +43,37 @@ jobs:
         run: |
           echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Linux Docker Image
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }} .
-          docker tag ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }} ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux -f Dockerfile.linux .
+            docker tag ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-linux
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-linux
+
+      - name: Create Multi-Platforms Image
+        run: |
+          docker buildx imagetools create --tag ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }} \
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows \
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux
+          docker buildx imagetools create --tag ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest \
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows \
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Delete Docker Tags
+        run: |
+          DIGEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows --verbose | jq -r '.Descriptor.digest')
+          DIGEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux --verbose | jq -r '.Descriptor.digest')
+
+          curl -X DELETE \
+            -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
+            https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_WINDOWS
+
+          curl -X DELETE \
+            -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
+            https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_LINUX
 
       - name: Log out from ACR
         run: |
