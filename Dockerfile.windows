@@ -1,0 +1,34 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+SHELL ["powershell", "-Command"]
+
+WORKDIR C:\\app\\
+
+ENV PYTHON_VERSION=3.11.6
+
+RUN Invoke-WebRequest -Uri "https://www.python.org/ftp/python/$Env:PYTHON_VERSION/python-$Env:PYTHON_VERSION-amd64.exe" -OutFile "C:\\python-installer.exe" -UseBasicParsing ; \
+    Start-Process -FilePath "C:\\python-installer.exe" -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1 TargetDir=C:\\Python' -Wait ; \
+    Remove-Item -Force "C:\\python-installer.exe" ; \
+    if (!(Test-Path 'C:\\Python')) { throw 'Python installation failed!' } ; \
+    $env:PATH = [Environment]::GetEnvironmentVariable('PATH', [EnvironmentVariableTarget]::Machine); \
+    python --version
+
+RUN $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/git-for-windows/git/releases/latest" -Headers @{ 'User-Agent' = 'Docker Build' } ; \
+    $latestInstallerUrl = $latestRelease.assets | Where-Object { $_.name -like '*64-bit.exe' } | Select-Object -ExpandProperty browser_download_url ; \
+    Invoke-WebRequest -Uri $latestInstallerUrl -OutFile "C:\\git-installer.exe" -UseBasicParsing ;\
+    Start-Process -FilePath "C:\\git-installer.exe" -ArgumentList '/VERYSILENT /NORESTART /SP-' -Wait ; \
+    Remove-Item -Force "C:\\git-installer.exe";
+
+RUN git --version
+
+RUN Invoke-WebRequest -Uri "https://aka.ms/vs/16/release/vc_redist.x64.exe" -OutFile "C:\\vc_redist.x64.exe" ; \
+    Start-Process -FilePath "C:\\vc_redist.x64.exe" -ArgumentList "/Q" -Wait ; \
+    Remove-Item -Force "C:\\vc_redist.x64.exe"
+
+RUN $latestRelease = (Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/lisa/releases/latest").tag_name; \
+    git clone --depth 1 --branch $latestRelease https://github.com/microsoft/lisa.git C:\\app\\lisa
+
+WORKDIR C:\\app\\lisa
+
+RUN python -m pip install --no-cache-dir --upgrade pip; \
+    python -m pip install --no-cache-dir --editable .[azure,libvirt,baremetal] --config-settings editable_mode=compat
