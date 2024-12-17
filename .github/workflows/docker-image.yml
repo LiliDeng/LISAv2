@@ -62,6 +62,11 @@ jobs:
 
       - name: Delete Docker Tags
         run: |
+          docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows
+          docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows
+          docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux
+          docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-linux
+
           DIGEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows | jq -r '.config.digest')
           DIGEST_LATEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows | jq -r '.config.digest')
           DIGEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux | jq -r '.config.digest')
