@@ -62,23 +62,25 @@ jobs:
 
       - name: Delete Docker Tags
         run: |
-          DIGEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows | jq -r '.config.digest')
-          DIGEST_LATEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows | jq -r '.config.digest')
-          DIGEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux | jq -r '.config.digest')
-          DIGEST_LATEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-linux | jq -r '.config.digest')
+          DIGEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-windows --verbose | jq -r '.Descriptor.digest')
+          DIGEST_LATEST_WINDOWS=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-windows --verbose | jq -r '.Descriptor.digest')
+          DIGEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ github.event.release.tag_name }}-linux --verbose | jq -r '.Descriptor.digest')
+          DIGEST_LATEST_LINUX=$(docker manifest inspect ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:latest-linux --verbose | jq -r '.Descriptor.digest')
+
+          echo "DIGEST_WINDOWS: $DIGEST_WINDOWS"
+          echo "DIGEST_LATEST_WINDOWS: $DIGEST_LATEST_WINDOWS"
+          echo "DIGEST_LINUX: $DIGEST_LINUX"
+          echo "DIGEST_LATEST_LINUX: $DIGEST_LATEST_LINUX"
 
           curl -X DELETE \
             -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
             https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_WINDOWS
-
           curl -X DELETE \
             -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
             https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_LATEST_WINDOWS
-
           curl -X DELETE \
             -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
             https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_LINUX
-
           curl -X DELETE \
             -u "${{ secrets.ACR_USERNAME }}:${{ secrets.ACR_PASSWORD }}" \
             https://${{ secrets.ACR_LOGIN_SERVER }}/v2/${{ secrets.ACR_REPOSITORY }}/manifests/$DIGEST_LATEST_LINUX
