@@ -30,7 +30,7 @@ RUN Invoke-WebRequest -Uri "https://aka.ms/downloadazcopy-v10-windows" -OutFile 
     Remove-Item -Path 'AzCopy.zip' -Force; \
     Remove-Item -Path 'AzCopy' -Recurse -Force
 
-WORKDIR C:\\app\\lisa
+ENV LISA_azcopypath="C:\\azcopy.exe"
 
 RUN python -m pip install --no-cache-dir --upgrade pip; \
     python -m pip install --no-cache-dir --editable .[ado,azure,libvirt,baremetal] --config-settings editable_mode=compat
