@@ -19,7 +19,8 @@ RUN tdnf update -y && \
         curl \
         wget \
         tar \
-        ca-certificates && \
+        ca-certificates \
+        azure-cli && \
     tdnf clean all && \
     rm -rf /var/cache/tdnf /tmp/*
 
